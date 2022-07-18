@@ -4,12 +4,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+
+import io.smallrye.jwt.auth.principal.JWTParser;
+
 import javax.websocket.Session;
 
 @ServerEndpoint("/chat/{username}")
@@ -17,6 +21,8 @@ import javax.websocket.Session;
 public class ChatSocket {
 
     Map<String, Session> sessions = new ConcurrentHashMap<>();
+    @Inject 
+    JWTParser parser;
 
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username) {

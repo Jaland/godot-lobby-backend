@@ -6,11 +6,11 @@ import java.util.Set;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
-@MongoEntity
+@MongoEntity(collection = "users", database = "vampire")
 public class User extends PanacheMongoEntity {
     
     private String username;
-    private String password;
+    private String token;
 
 
     // Data Retrieval Methods
@@ -18,12 +18,13 @@ public class User extends PanacheMongoEntity {
         return find("username", username).firstResult();
     }
 
+
     public User() {
     }
 
-    public User(String username, String password) {
+    public User(String username, String token) {
         this.username = username;
-        this.password = password;
+        this.token = token;
     }
 
     public String getUsername() {
@@ -34,12 +35,12 @@ public class User extends PanacheMongoEntity {
         this.username = username;
     }
 
-    public String getPassword() {
-        return this.password;
+    public String getToken() {
+        return this.token;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public User username(String username) {
@@ -47,8 +48,8 @@ public class User extends PanacheMongoEntity {
         return this;
     }
 
-    public User password(String password) {
-        setPassword(password);
+    public User token(String token) {
+        setToken(token);
         return this;
     }
 
@@ -60,21 +61,21 @@ public class User extends PanacheMongoEntity {
             return false;
         }
         User user = (User) o;
-        return Objects.equals(username, user.username) && Objects.equals(password, user.password);
+        return Objects.equals(username, user.username) && Objects.equals(token, user.token);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(username, password);
+        return Objects.hash(username, token);
     }
 
     @Override
     public String toString() {
         return "{" +
             " username='" + getUsername() + "'" +
-            ", password='" + getPassword() + "'" +
+            ", token='" + getToken() + "'" +
             "}";
     }
-
+    
 
 }

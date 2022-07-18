@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.services;
+package org.landister.vampire.backend.services.login;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -21,7 +21,7 @@ import io.quarkus.runtime.StartupEvent;
 
 // TODO: Stole this from online but JFC! Why does java not have a builtin way for me to do this hashing myself (not counting through rest)
 @ApplicationScoped
-public class LoginService {
+public class PasswordService {
 
 	/**
 	 * Each token produced by this class uses this identifier as a prefix.
@@ -29,7 +29,7 @@ public class LoginService {
 	@ConfigProperty(name = "password.encryption.id")
 	String ID;
 
-	private static final Logger LOG = Logger.getLogger(LoginService.class);
+	private static final Logger LOG = Logger.getLogger(PasswordService.class);
 
 	/**
 	 * The minimum recommended cost, used by default
