@@ -1,8 +1,9 @@
-package org.landister.vampire.backend.services.login;
+package org.landister.vampire.backend.util;
 
 import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
+import org.landister.vampire.backend.util.PasswordService;
 
 import io.quarkus.test.junit.QuarkusTest;
 

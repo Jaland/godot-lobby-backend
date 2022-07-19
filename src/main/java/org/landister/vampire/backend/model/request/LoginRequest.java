@@ -1,15 +1,21 @@
-package org.landister.vampire.backend.request;
+package org.landister.vampire.backend.model.request;
 
 import java.util.Objects;
 
-public class LoginRequest {
+import org.landister.vampire.backend.util.PropertyBasedDeserializer;
+
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+
+@JsonDeserialize( using = JsonDeserializer.None.class )
+public class LoginRequest extends UserRequest {
 
   String username;
 
   String password;
 
   boolean register = false;
-
 
   public LoginRequest() {
   }

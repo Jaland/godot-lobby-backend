@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.services.login;
+package org.landister.vampire.backend.util;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;

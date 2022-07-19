@@ -19,7 +19,8 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.request.LoginRequest;
+import org.landister.vampire.backend.model.request.LoginRequest;
+import org.landister.vampire.backend.model.request.UserRequest;
 import org.landister.vampire.backend.services.login.LoginService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,42 +29,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.logging.Log;
 
 //This login can be externalized as a separate service in the future.
-@ServerEndpoint("/login/{clientId}")
+@ServerEndpoint("/login")
 @RequestScoped
-public class LoginController {
+public class LoginController extends BaseController{
 
     @Inject
     LoginService loginService;
 
-    ObjectMapper mapper = new ObjectMapper();
-
-    Map<String, Session> sessions = new ConcurrentHashMap<>();
     private static final Logger LOG = Logger.getLogger(LoginController.class);
 
     @OnOpen
-    public void onOpen(Session session, @PathParam("clientId") String clientId) {
-        LOG.info("Open Session for Client: " + clientId);
-        sessions.put(clientId, session);
+    public void onOpen(Session session) {
+        LOG.info("Open Session: " + session.getId());
     }
 
     @OnClose
-    public void onClose(Session session, @PathParam("clientId") String clientId) {
-        LOG.info("Removing client: " + clientId);
-        sessions.remove(clientId);
+    public void onClose(Session session) {
+        LOG.info("Removing client: " + session.getId());
     }
 
     @OnError
-    public void onError(Session session, @PathParam("clientId") String clientId, Throwable throwable) {
-        LOG.info("Error for: " + clientId, throwable);
-        sessions.remove(clientId);
+    public void onError(Session session, Throwable throwable) {
+        super.onError(session, throwable);
     }
 
     @OnMessage
-    public void onMessage(Session session, String encodedMessage, @PathParam("clientId") String clientId) throws IOException {
+    public void onMessage(Session session, String encodedMessage) {
         try {
-            LOG.info("Message for: " + clientId + ": " + encodedMessage);
+            LOG.debug("Message for: " + session.getId() + ": " + encodedMessage);
             String message = new String(Base64.getDecoder().decode(encodedMessage));
-            LoginRequest request = mapper.readValue(message, LoginRequest.class);
+            LoginRequest request = (LoginRequest) mapper.readValue(message, UserRequest.class);
             if(request.getRegister()) {
                 loginService.register(request);
             }
@@ -71,7 +66,7 @@ public class LoginController {
             session.getAsyncRemote().sendText(Base64.getEncoder().encodeToString(jwtToken.getBytes()));
         } catch (Exception e) {
             LOG.error("Invalid Message passed to login", e);
-            session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Invalid login"));
+            closeSession(session, "Invalid login");
         }
     }
 

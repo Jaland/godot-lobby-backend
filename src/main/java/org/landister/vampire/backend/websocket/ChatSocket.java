@@ -18,42 +18,36 @@ import javax.websocket.Session;
 
 @ServerEndpoint("/chat/{username}")
 @ApplicationScoped
-public class ChatSocket {
+public class ChatSocket extends BaseController {
 
-    Map<String, Session> sessions = new ConcurrentHashMap<>();
-    @Inject 
-    JWTParser parser;
 
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username) {
-        sessions.put(username, session);
+        super.onOpen(session);
         broadcast("User " + username + " joined");
     }
 
     @OnClose
     public void onClose(Session session, @PathParam("username") String username) {
-        sessions.remove(username);
+        super.onClose(session);
         broadcast("User " + username + " left");
     }
 
     @OnError
     public void onError(Session session, @PathParam("username") String username, Throwable throwable) {
-        sessions.remove(username);
+        super.onError(session, throwable);
         broadcast("User " + username + " left on error: " + throwable);
     }
 
     @OnMessage
-    public void onMessage(String message, @PathParam("username") String username) {
-        if (message.equalsIgnoreCase("_ready_")) {
-            broadcast("User " + username + " joined");
-        } else {
-            broadcast(">> " + username + ": " + message);
-        }
+    public void onMessage(Session session, String message, @PathParam("username") String username) {
+        super.onMessage(session, message);
+        broadcast(">> " + username + ": " + message);
     }
 
     private void broadcast(String message) {
         sessions.values().forEach(s -> {
-            s.getAsyncRemote().sendObject(message, result -> {
+            s.getSession().getAsyncRemote().sendObject(message, result -> {
                 if (result.getException() != null) {
                     System.out.println("Unable to send message: " + result.getException());
                 }
