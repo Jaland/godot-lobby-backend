@@ -2,7 +2,9 @@ package org.landister.vampire.backend.model.request;
 
 import java.util.Objects;
 
+import org.landister.vampire.backend.services.SessionCacheService;
 import org.landister.vampire.backend.util.PropertyBasedDeserializer;
+import org.landister.vampire.backend.websocket.BaseController;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -14,7 +16,8 @@ public class UserRequest {
     CHAT(ChatRequest.class),
     AUTH(AuthRequest.class);
 
-    Class<? extends UserRequest> requestClass;
+  Class<? extends UserRequest> requestClass;
+
 
     RequestType(Class<? extends UserRequest> c) {
       requestClass = c;
@@ -27,11 +30,15 @@ public class UserRequest {
 
   RequestType requestType;
 
+  Integer gameId = SessionCacheService.GLOBAL_GAME_ID;
+
+
   public UserRequest() {
   }
 
-  public UserRequest(RequestType requestType) {
+  public UserRequest(RequestType requestType, Integer gameId) {
     this.requestType = requestType;
+    this.gameId = gameId;
   }
 
   public RequestType getRequestType() {
@@ -42,8 +49,21 @@ public class UserRequest {
     this.requestType = requestType;
   }
 
+  public Integer getGameId() {
+    return this.gameId;
+  }
+
+  public void setGameId(Integer gameId) {
+    this.gameId = gameId;
+  }
+
   public UserRequest requestType(RequestType requestType) {
     setRequestType(requestType);
+    return this;
+  }
+
+  public UserRequest gameId(Integer gameId) {
+    setGameId(gameId);
     return this;
   }
 
@@ -55,21 +75,21 @@ public class UserRequest {
             return false;
         }
         UserRequest userRequest = (UserRequest) o;
-        return Objects.equals(requestType, userRequest.requestType);
+        return Objects.equals(requestType, userRequest.requestType) && Objects.equals(gameId, userRequest.gameId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(requestType);
+    return Objects.hash(requestType, gameId);
   }
 
   @Override
   public String toString() {
     return "{" +
       " requestType='" + getRequestType() + "'" +
+      ", gameId='" + getGameId() + "'" +
       "}";
   }
-
 
   
 }

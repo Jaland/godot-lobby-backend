@@ -1,12 +1,6 @@
 package org.landister.vampire.backend.websocket;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.inject.Inject;
-import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Session;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -14,11 +8,15 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.AuthRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.response.BaseResponse;
 import org.landister.vampire.backend.model.session.UserSession;
+import org.landister.vampire.backend.services.SessionCacheService;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.smallrye.jwt.auth.principal.JWTParser;
+import io.smallrye.jwt.auth.principal.ParseException;
 /**
  * Extended by all sockets that require authentication(i.e. not login/register)
  * 
@@ -26,66 +24,80 @@ import io.smallrye.jwt.auth.principal.JWTParser;
  */
 public class BaseController {
 
-    protected Map<String, UserSession> sessions = new ConcurrentHashMap<>();
-
-    ObjectMapper mapper = new ObjectMapper();
-
     @Inject 
     JWTParser parser;
 
+    @Inject
+    SessionCacheService sessionCacheService;
+
+    @Inject
+    ObjectMapper mapper;
+
+    @Inject
     @ConfigProperty(name = "jwt.secret")
     String jwtSecret;
 
-    private static final Logger LOG = Logger.getLogger(LoginController.class);
+    private static final Logger LOG = Logger.getLogger(BaseController.class);
 
     public void onOpen(Session session) {
-        sessions.put(session.getId(), new UserSession().session(session));
+        sessionCacheService.addToSession(SessionCacheService.GLOBAL_GAME_ID, session.getId(), 
+                            new UserSession().session(session).gameId(SessionCacheService.GLOBAL_GAME_ID));
     }
 
-    public void onClose(Session session) {
-        sessions.remove(session.getId());
+    public UserSession onCloseBase(Session session) {
+        return sessionCacheService.removeAllSessions(session.getId());
     }
 
-    public void onError(Session session, Throwable throwable) {
-        sessions.remove(session.getId());
+    public UserSession onErrorBase(Session session, Throwable throwable) {
         LOG.error("Error in session: {}\n {}", session.getId(), throwable);
+        return sessionCacheService.removeAllSessions(session.getId());
     }
 
-    public void onMessage(Session session, String message) {
-        UserSession userSession = sessions.get(session.getId());
-        if (userSession == null) {
-            LOG.error("Session not found: " + session.getId());
-            closeSession(session, "Session not found");
-        }
-        if(userSession.getToken() == null) {
-            try {
-                UserRequest userRequest = mapper.readValue(message, UserRequest.class);
-                if(userRequest.getClass() != AuthRequest.class)
-                    throw new IllegalArgumentException("User Not Yet Authenticated");
-                AuthRequest authRequest = (AuthRequest) userRequest;
-                if(authRequest.getToken() == null)
-                    throw new IllegalArgumentException("Token Not Present");
-                 
-                // Validated that `parse.verify` will actually check to make sure the token isn't expired.
-                parser.verify(authRequest.getToken(), jwtSecret);
-                userSession.setToken(authRequest.getToken());
-            } catch (Exception e) {
-                LOG.error("Error reading json in se session: {}\n {}", session.getId(), e);
-                closeSession(session, "Error reading json");
-            }
-            LOG.error("User session is null");
-            return;
-        }
-    }
-
-    protected void closeSession(Session session, String reason) {
-        sessions.remove(session.getId());
+    public UserRequest onMessageBase(Session session, String message) {
+        UserRequest userRequest;
         try {
-            session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, reason));
-        } catch (IOException e) {
-            LOG.error("Error closing session: {}\n {}", session.getId(), e);
+            userRequest = mapper.readValue(message, UserRequest.class);
+        } catch (Exception e) {
+            LOG.error("Error reading json in session: {}\n {}", session.getId(), e);
             throw new RuntimeException(e);
         }
+        UserSession userSession = sessionCacheService.getUserSession(userRequest.getGameId(), session.getId());
+        if (userSession == null) {
+            LOG.error("Session not found: " + session.getId());
+            sessionCacheService.closeSession(session, "Session not found");
+        }
+        if(userSession.getToken() == null) {
+            if(userRequest.getClass() != AuthRequest.class)
+                throw new IllegalArgumentException("User Not Yet Authenticated");
+            AuthRequest authRequest = (AuthRequest) userRequest;
+            if(authRequest.getToken() == null)
+                throw new IllegalArgumentException("Token Not Present");
+                
+            // Validated that `parse.verify` will actually check to make sure the token isn't expired.
+            try {
+                JsonWebToken token = parser.verify(authRequest.getToken(), jwtSecret);
+                userSession.setUsername(token.getName());
+            } catch (ParseException e) {
+                LOG.error("Invalid Token: " + authRequest.getToken(), e);
+                sessionCacheService.closeSession(session, "Invalid Token");
+            }
+            userSession.setToken(authRequest.getToken());
+        }
+        return userRequest;
     }
 
+
+    protected void broadcastMessageToGame(int gameId, BaseResponse response) {
+        sessionCacheService.getGameSessions(gameId).values().forEach(s -> {
+            try {
+                s.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
+                    if (result.getException() != null) {
+                        LOG.error("Unable to send message: " + result.getException() + "\n");
+                    }
+                });
+            } catch (JsonProcessingException e) {
+                LOG.error("Unable to parse message: " + response + "\n");
+            }
+        });
+    }
 }

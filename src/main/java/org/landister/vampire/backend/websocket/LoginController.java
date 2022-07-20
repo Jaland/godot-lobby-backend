@@ -1,32 +1,20 @@
 package org.landister.vampire.backend.websocket;
 
-import java.io.IOException;
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.LoginRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
 import org.landister.vampire.backend.services.login.LoginService;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkus.logging.Log;
 
 //This login can be externalized as a separate service in the future.
 @ServerEndpoint("/login")
@@ -50,7 +38,7 @@ public class LoginController extends BaseController{
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        super.onError(session, throwable);
+        super.onErrorBase(session, throwable);
     }
 
     @OnMessage
@@ -66,7 +54,7 @@ public class LoginController extends BaseController{
             session.getAsyncRemote().sendText(Base64.getEncoder().encodeToString(jwtToken.getBytes()));
         } catch (Exception e) {
             LOG.error("Invalid Message passed to login", e);
-            closeSession(session, "Invalid login");
+            sessionCacheService.closeSession(session, "Invalid login");
         }
     }
 

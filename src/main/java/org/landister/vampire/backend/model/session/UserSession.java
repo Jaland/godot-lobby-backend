@@ -9,15 +9,17 @@ public class UserSession {
   Session session;
   String username;
   String token;
+  Integer gameId = 0;
 
 
   public UserSession() {
   }
 
-  public UserSession(Session session, String username, String token) {
+  public UserSession(Session session, String username, String token, Integer gameId) {
     this.session = session;
     this.username = username;
     this.token = token;
+    this.gameId = gameId;
   }
 
   public Session getSession() {
@@ -44,6 +46,14 @@ public class UserSession {
     this.token = token;
   }
 
+  public Integer getGameId() {
+    return this.gameId;
+  }
+
+  public void setGameId(Integer gameId) {
+    this.gameId = gameId;
+  }
+
   public UserSession session(Session session) {
     setSession(session);
     return this;
@@ -59,6 +69,11 @@ public class UserSession {
     return this;
   }
 
+  public UserSession gameId(Integer gameId) {
+    setGameId(gameId);
+    return this;
+  }
+
   @Override
     public boolean equals(Object o) {
         if (o == this)
@@ -67,12 +82,12 @@ public class UserSession {
             return false;
         }
         UserSession userSession = (UserSession) o;
-        return Objects.equals(session, userSession.session) && Objects.equals(username, userSession.username) && Objects.equals(token, userSession.token);
+        return Objects.equals(session, userSession.session) && Objects.equals(username, userSession.username) && Objects.equals(token, userSession.token) && Objects.equals(gameId, userSession.gameId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(session, username, token);
+    return Objects.hash(session, username, token, gameId);
   }
 
   @Override
@@ -81,8 +96,10 @@ public class UserSession {
       " session='" + getSession() + "'" +
       ", username='" + getUsername() + "'" +
       ", token='" + getToken() + "'" +
+      ", gameId='" + getGameId() + "'" +
       "}";
   }
+
   
   
 }

@@ -1,20 +1,16 @@
-package org.landister.vampire.backend.model.request;
+package org.landister.vampire.backend.model.response;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+public class ChatResponse extends BaseResponse {
 
-@JsonDeserialize( using = JsonDeserializer.None.class )
-public class ChatRequest extends UserRequest {
-
-  String message;
+  public String message;
 
 
-  public ChatRequest() {
+  public ChatResponse() {
   }
 
-  public ChatRequest(String message) {
+  public ChatResponse(String message) {
     this.message = message;
   }
 
@@ -26,7 +22,7 @@ public class ChatRequest extends UserRequest {
     this.message = message;
   }
 
-  public ChatRequest message(String message) {
+  public ChatResponse message(String message) {
     setMessage(message);
     return this;
   }
@@ -35,11 +31,11 @@ public class ChatRequest extends UserRequest {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof ChatRequest)) {
+        if (!(o instanceof ChatResponse)) {
             return false;
         }
-        ChatRequest chatRequest = (ChatRequest) o;
-        return Objects.equals(message, chatRequest.message);
+        ChatResponse chatResponse = (ChatResponse) o;
+        return Objects.equals(message, chatResponse.message);
   }
 
   @Override
