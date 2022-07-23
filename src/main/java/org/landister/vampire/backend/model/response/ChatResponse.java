@@ -6,11 +6,12 @@ public class ChatResponse extends BaseResponse {
 
   public String message;
 
-
   public ChatResponse() {
+    type = "chat";
   }
 
   public ChatResponse(String message) {
+    type = "chat";
     this.message = message;
   }
 

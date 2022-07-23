@@ -2,9 +2,12 @@ package org.landister.vampire.backend.model.request;
 
 import java.util.Objects;
 
+import org.landister.vampire.backend.model.request.auth.AuthRequest;
+import org.landister.vampire.backend.model.request.auth.LoginRequest;
+import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
+import org.landister.vampire.backend.model.request.lobby.LobbyRefreshRequest;
 import org.landister.vampire.backend.services.SessionCacheService;
 import org.landister.vampire.backend.util.PropertyBasedDeserializer;
-import org.landister.vampire.backend.websocket.BaseController;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -14,7 +17,9 @@ public class UserRequest {
   public enum RequestType {
     LOGIN(LoginRequest.class),
     CHAT(ChatRequest.class),
-    AUTH(AuthRequest.class);
+    AUTH(AuthRequest.class),
+    LOBBY_REFRESH(LobbyRefreshRequest.class),
+    CREATE_GAME(CreateGameRequest.class),;
 
   Class<? extends UserRequest> requestClass;
 

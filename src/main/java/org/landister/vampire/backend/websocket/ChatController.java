@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.enterprise.context.ApplicationScoped;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
-import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
@@ -15,13 +14,9 @@ import javax.websocket.server.ServerEndpoint;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.ChatRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
-import org.landister.vampire.backend.model.response.BaseResponse;
 import org.landister.vampire.backend.model.response.ChatResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-@ServerEndpoint("/chat")
 @ApplicationScoped
 public class ChatController extends BaseController {
 
@@ -52,8 +47,7 @@ public class ChatController extends BaseController {
         }
     }
 
-    @OnMessage
-    public void onMessage(Session session, String message) {
+    public UserRequest onMessageBase(Session session, String message) {
         UserRequest request = super.onMessageBase(session, message);
         UserSession userSession = sessionCacheService.getUserSession(request.getGameId(), session.getId());
         switch (request.getRequestType()) {
@@ -66,6 +60,7 @@ public class ChatController extends BaseController {
             default:
                 break;
         }
+        return request;
     }
 
     public void processMessage(Session session, ChatRequest request, UserSession userSession) {

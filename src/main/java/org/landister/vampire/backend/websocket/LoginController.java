@@ -12,8 +12,8 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.model.request.LoginRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.services.login.LoginService;
 
 //This login can be externalized as a separate service in the future.

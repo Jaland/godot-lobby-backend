@@ -5,7 +5,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.landister.vampire.backend.model.auth.User;
-import org.landister.vampire.backend.model.request.LoginRequest;
+import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.util.PasswordService;
 
 import io.smallrye.jwt.build.Jwt;

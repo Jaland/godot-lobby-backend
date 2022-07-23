@@ -1,8 +1,11 @@
 package org.landister.vampire.backend.websocket;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -14,10 +17,15 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.model.request.ChatRequest;
+import org.landister.vampire.backend.mapper.GameMapper;
+import org.landister.vampire.backend.model.game.Game;
 import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.response.ChatResponse;
+import org.landister.vampire.backend.model.response.GameResponse;
+import org.landister.vampire.backend.model.response.GetAllGamesResponse;
 import org.landister.vampire.backend.model.session.UserSession;
+import org.landister.vampire.backend.services.SessionCacheService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -31,6 +39,9 @@ public class LobbyController extends ChatController {
 
     @Inject
     ObjectMapper mapper;
+
+    @Inject
+    GameMapper gameMapper;
 
     private static final Logger LOG = Logger.getLogger(ChatController.class);
 
@@ -60,18 +71,31 @@ public class LobbyController extends ChatController {
         UserRequest request= super.onMessageBase(session, message);
         UserSession userSession = sessionCacheService.getUserSession(request.getGameId(), session.getId());
         switch (request.getRequestType()) {
-            case AUTH:
-                broadcastMessageToGame(request.getGameId(), new ChatResponse("[color=green][b]" + userSession.getUsername() + "[/b] has joined the chat[/color]"));
+            case LOBBY_REFRESH:
+                refreshLobby(session, userSession);
                 break;
-            case CHAT:
-                processMessage(session, (ChatRequest)request, userSession);
+            case CREATE_GAME:
+                newGame(session, (CreateGameRequest)request, userSession);
                 break;
             default:
                 break;
         }
     }
 
-    public void processMessage(Session session, ChatRequest request, UserSession userSession) {
-        broadcastMessageToGame(request.getGameId(), new ChatResponse("[b]" + userSession.getUsername() + ":[/b] " + request.getMessage()));
+    private void refreshLobby(Session session, UserSession userSession) {
+        Stream<Game> games = Game.streamAll();
+        GetAllGamesResponse response = new GetAllGamesResponse()
+            .games(
+                games.map(gameMapper::toGameResponse).collect(Collectors.toList())
+            );
+        broadcastMessageToUser(SessionCacheService.GLOBAL_GAME_ID, response, userSession);
+    }
+
+
+    private void newGame(Session session, CreateGameRequest request, UserSession userSession) {
+        Game game = new Game().name(request.getName()).users(List.of(userSession.getUsername()));
+        game.persist();
+        GameResponse response = gameMapper.toGameResponse(game);
+        broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, response);
     }
 }

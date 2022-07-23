@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.landister.vampire.backend.model.request.ChatRequest;
-import org.landister.vampire.backend.model.request.LoginRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.auth.LoginRequest;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;

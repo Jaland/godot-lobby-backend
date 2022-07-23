@@ -6,8 +6,8 @@ import javax.websocket.Session;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.model.request.AuthRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.auth.AuthRequest;
 import org.landister.vampire.backend.model.response.BaseResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.SessionCacheService;
@@ -99,5 +99,17 @@ public class BaseController {
                 LOG.error("Unable to parse message: " + response + "\n");
             }
         });
+    }
+
+    protected void broadcastMessageToUser(int gameId, BaseResponse response, UserSession userSession) {
+        try {
+        userSession.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
+            if (result.getException() != null) {
+                LOG.error("Unable to send message: " + result.getException() + "\n");
+            }
+        });
+        } catch (JsonProcessingException e) {
+            LOG.error("Unable to parse message: " + response + "\n");
+        }
     }
 }

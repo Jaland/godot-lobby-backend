@@ -1,7 +1,6 @@
 package org.landister.vampire.backend.model.auth;
 
 import java.util.Objects;
-import java.util.Set;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
