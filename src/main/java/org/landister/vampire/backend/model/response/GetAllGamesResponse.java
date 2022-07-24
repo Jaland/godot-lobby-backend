@@ -7,13 +7,10 @@ public class GetAllGamesResponse extends BaseResponse {
 
   final static String RESPONSE_TYPE = "game_list";
 
-  public String type="gameList";
-
   public List<GameResponse> games;
 
-
   public GetAllGamesResponse() {
-    type = "gameList";
+    type = RESPONSE_TYPE;
   }
 
   public List<GameResponse> getGames() {

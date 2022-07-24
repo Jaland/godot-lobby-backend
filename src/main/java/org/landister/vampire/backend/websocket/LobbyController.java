@@ -95,6 +95,7 @@ public class LobbyController extends ChatController {
     private void newGame(Session session, CreateGameRequest request, UserSession userSession) {
         Game game = new Game().name(request.getName()).users(List.of(userSession.getUsername()));
         game.persist();
+        LOG.info("Created Game: " + game);
         GameResponse response = gameMapper.toGameResponse(game);
         broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, response);
     }

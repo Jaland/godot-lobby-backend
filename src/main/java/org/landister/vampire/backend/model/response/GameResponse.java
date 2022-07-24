@@ -4,14 +4,14 @@ import java.util.Objects;
 
 public class GameResponse extends BaseResponse {
 
-
+  final static String RESPONSE_TYPE = "game";
 
   String id;
   String name;
   
 
   public GameResponse() {
-    type="game";
+    type=RESPONSE_TYPE;
   }
 
   public String getName() {

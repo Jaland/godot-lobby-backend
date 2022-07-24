@@ -4,14 +4,16 @@ import java.util.Objects;
 
 public class ChatResponse extends BaseResponse {
 
+  final static String RESPONSE_TYPE = "chat";
+
   public String message;
 
   public ChatResponse() {
-    type = "chat";
+    type = RESPONSE_TYPE;
   }
 
   public ChatResponse(String message) {
-    type = "chat";
+    type = RESPONSE_TYPE;
     this.message = message;
   }
 
