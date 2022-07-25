@@ -87,7 +87,7 @@ public class BaseController {
     }
 
 
-    protected void broadcastMessageToGame(int gameId, BaseResponse response) {
+    protected void broadcastMessageToGame(String gameId, BaseResponse response) {
         sessionCacheService.getGameSessions(gameId).values().forEach(s -> {
             try {
                 s.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
@@ -101,7 +101,7 @@ public class BaseController {
         });
     }
 
-    protected void broadcastMessageToUser(int gameId, BaseResponse response, UserSession userSession) {
+    protected void broadcastMessageToUser(String gameId, BaseResponse response, UserSession userSession) {
         try {
         userSession.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
             if (result.getException() != null) {

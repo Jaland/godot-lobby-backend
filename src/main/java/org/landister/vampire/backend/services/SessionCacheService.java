@@ -20,12 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @ApplicationScoped
 public class SessionCacheService {
 
-  public static final int GLOBAL_GAME_ID = 0;
+  public static final String GLOBAL_GAME_ID = "0";
 
   // TODO: Figure out how to cache this map
   // Game Id -> Session Id -> User Information
   // Also this was public originally but if you try to access the variable directly it is empty for some reason
-  private Map<Integer, Map<String, UserSession>> sessions = new ConcurrentHashMap<>();
+  private Map<String, Map<String, UserSession>> sessions = new ConcurrentHashMap<>();
 
   ObjectMapper mapper = new ObjectMapper();
 
@@ -40,7 +40,7 @@ public class SessionCacheService {
         return userSession;
     }
 
-  public UserSession removeSession(int gameId, String sessionId) {
+  public UserSession removeSession(String gameId, String sessionId) {
       Map<String, UserSession> gameSessions = sessions.get(gameId);
       if (gameSessions == null) {
           return null;
@@ -48,7 +48,7 @@ public class SessionCacheService {
       return gameSessions.remove(sessionId);
   }
 
-  public UserSession getUserSession(int gameId, String sessionId){
+  public UserSession getUserSession(String gameId, String sessionId){
       Map<String, UserSession> gameSessions = sessions.get(gameId);
       if (gameSessions == null) {
           LOG.error("Game not found: " + sessionId);
@@ -62,11 +62,11 @@ public class SessionCacheService {
       return userSession;
   }
 
-  public Map<String, UserSession> getGameSessions(int gameId) {
+  public Map<String, UserSession> getGameSessions(String gameId) {
       return sessions.get(gameId);
   }
 
-  public void putGameSession(int gameId, String sessionId, UserSession userSession) {
+  public void putGameSession(String gameId, String sessionId, UserSession userSession) {
       Map<String, UserSession> gameSessions = sessions.get(gameId);
       if (gameSessions == null) {
           gameSessions = new ConcurrentHashMap<>();
@@ -75,7 +75,7 @@ public class SessionCacheService {
       gameSessions.put(sessionId, userSession);
   }
 
-  public void addToSession(int gameId, String sessionId, UserSession userSession) {
+  public void addToSession(String gameId, String sessionId, UserSession userSession) {
       Map<String, UserSession> gameSessions = sessions.get(gameId);
       if (gameSessions == null) {
           gameSessions = new ConcurrentHashMap<>();

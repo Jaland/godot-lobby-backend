@@ -21,11 +21,13 @@ import org.landister.vampire.backend.mapper.GameMapper;
 import org.landister.vampire.backend.model.game.Game;
 import org.landister.vampire.backend.model.request.UserRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
+import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.response.ChatResponse;
-import org.landister.vampire.backend.model.response.GameResponse;
+import org.landister.vampire.backend.model.response.JoinGameResponse;
 import org.landister.vampire.backend.model.response.GetAllGamesResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.SessionCacheService;
+import org.landister.vampire.backend.services.lobby.LobbyService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -42,6 +44,9 @@ public class LobbyController extends ChatController {
 
     @Inject
     GameMapper gameMapper;
+
+    @Inject
+    LobbyService lobbyService;
 
     private static final Logger LOG = Logger.getLogger(ChatController.class);
 
@@ -75,7 +80,10 @@ public class LobbyController extends ChatController {
                 refreshLobby(session, userSession);
                 break;
             case CREATE_GAME:
-                newGame(session, (CreateGameRequest)request, userSession);
+                createGame(session, (CreateGameRequest)request, userSession);
+                break;
+            case JOIN_GAME:
+                joinGame(session, (JoinGameRequest)request, userSession);
                 break;
             default:
                 break;
@@ -91,12 +99,18 @@ public class LobbyController extends ChatController {
         broadcastMessageToUser(SessionCacheService.GLOBAL_GAME_ID, response, userSession);
     }
 
-
-    private void newGame(Session session, CreateGameRequest request, UserSession userSession) {
-        Game game = new Game().name(request.getName()).users(List.of(userSession.getUsername()));
-        game.persist();
+    private void createGame(Session session, CreateGameRequest request, UserSession userSession) {
+        Game game = lobbyService.createGame(userSession);
         LOG.info("Created Game: " + game);
-        GameResponse response = gameMapper.toGameResponse(game);
+        JoinGameResponse response = gameMapper.toGameResponse(game);
         broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, response);
+    }
+
+
+    private void joinGame(Session session, JoinGameRequest request, UserSession userSession) {
+        Game game = lobbyService.joinGame(userSession, request.getJoinGameId());
+        LOG.info("Joined Game: " + game);
+        JoinGameResponse response = gameMapper.toGameResponse(game);
+        broadcastMessageToUser(SessionCacheService.GLOBAL_GAME_ID, response, userSession);
     }
 }

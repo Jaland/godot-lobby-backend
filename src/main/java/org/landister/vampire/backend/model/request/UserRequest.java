@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.landister.vampire.backend.model.request.auth.AuthRequest;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
+import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.request.lobby.LobbyRefreshRequest;
 import org.landister.vampire.backend.services.SessionCacheService;
 import org.landister.vampire.backend.util.PropertyBasedDeserializer;
@@ -19,7 +20,8 @@ public class UserRequest {
     CHAT(ChatRequest.class),
     AUTH(AuthRequest.class),
     LOBBY_REFRESH(LobbyRefreshRequest.class),
-    CREATE_GAME(CreateGameRequest.class),;
+    CREATE_GAME(CreateGameRequest.class), 
+    JOIN_GAME(JoinGameRequest.class),;
 
   Class<? extends UserRequest> requestClass;
 
@@ -35,13 +37,13 @@ public class UserRequest {
 
   RequestType requestType;
 
-  Integer gameId = SessionCacheService.GLOBAL_GAME_ID;
+  String gameId = SessionCacheService.GLOBAL_GAME_ID;
 
 
   public UserRequest() {
   }
 
-  public UserRequest(RequestType requestType, Integer gameId) {
+  public UserRequest(RequestType requestType, String gameId) {
     this.requestType = requestType;
     this.gameId = gameId;
   }
@@ -54,11 +56,11 @@ public class UserRequest {
     this.requestType = requestType;
   }
 
-  public Integer getGameId() {
+  public String getGameId() {
     return this.gameId;
   }
 
-  public void setGameId(Integer gameId) {
+  public void setGameId(String gameId) {
     this.gameId = gameId;
   }
 
@@ -67,7 +69,7 @@ public class UserRequest {
     return this;
   }
 
-  public UserRequest gameId(Integer gameId) {
+  public UserRequest gameId(String gameId) {
     setGameId(gameId);
     return this;
   }

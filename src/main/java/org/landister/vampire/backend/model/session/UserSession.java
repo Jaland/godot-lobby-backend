@@ -3,19 +3,21 @@ package org.landister.vampire.backend.model.session;
 import java.util.Objects;
 import javax.websocket.Session;
 
+import org.landister.vampire.backend.services.SessionCacheService;
+
 
 public class UserSession {
 
   Session session;
   String username;
   String token;
-  Integer gameId = 0;
+  String gameId = SessionCacheService.GLOBAL_GAME_ID;
 
 
   public UserSession() {
   }
 
-  public UserSession(Session session, String username, String token, Integer gameId) {
+  public UserSession(Session session, String username, String token, String gameId) {
     this.session = session;
     this.username = username;
     this.token = token;
@@ -46,11 +48,11 @@ public class UserSession {
     this.token = token;
   }
 
-  public Integer getGameId() {
+  public String getGameId() {
     return this.gameId;
   }
 
-  public void setGameId(Integer gameId) {
+  public void setGameId(String gameId) {
     this.gameId = gameId;
   }
 
@@ -69,7 +71,7 @@ public class UserSession {
     return this;
   }
 
-  public UserSession gameId(Integer gameId) {
+  public UserSession gameId(String gameId) {
     setGameId(gameId);
     return this;
   }
@@ -99,7 +101,5 @@ public class UserSession {
       ", gameId='" + getGameId() + "'" +
       "}";
   }
-
-  
   
 }
