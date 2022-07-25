@@ -1,6 +1,8 @@
-package org.landister.vampire.backend.model.response;
+package org.landister.vampire.backend.model.response.chat;
 
 import java.util.Objects;
+
+import org.landister.vampire.backend.model.response.BaseResponse;
 
 public class ChatResponse extends BaseResponse {
 

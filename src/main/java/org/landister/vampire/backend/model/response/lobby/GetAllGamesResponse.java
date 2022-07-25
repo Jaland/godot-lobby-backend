@@ -7,21 +7,21 @@ public class GetAllGamesResponse extends BaseResponse {
 
   final static String RESPONSE_TYPE = "game_list";
 
-  public List<JoinGameResponse> games;
+  public List<GameResponse> games;
 
   public GetAllGamesResponse() {
     type = RESPONSE_TYPE;
   }
 
-  public List<JoinGameResponse> getGames() {
+  public List<GameResponse> getGames() {
     return this.games;
   }
 
-  public void setGames(List<JoinGameResponse> games) {
+  public void setGames(List<GameResponse> games) {
     this.games = games;
   }
 
-  public GetAllGamesResponse games(List<JoinGameResponse> games) {
+  public GetAllGamesResponse games(List<GameResponse> games) {
     setGames(games);
     return this;
   }

@@ -13,7 +13,7 @@ import javax.websocket.Session;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.ChatRequest;
 import org.landister.vampire.backend.model.request.UserRequest;
-import org.landister.vampire.backend.model.response.ChatResponse;
+import org.landister.vampire.backend.model.response.chat.ChatResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 
 @ApplicationScoped

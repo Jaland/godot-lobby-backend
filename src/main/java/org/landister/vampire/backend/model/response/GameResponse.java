@@ -2,15 +2,15 @@ package org.landister.vampire.backend.model.response;
 
 import java.util.Objects;
 
-public class JoinGameResponse extends BaseResponse {
+public class GameResponse extends BaseResponse {
 
-  final static String RESPONSE_TYPE = "join_game";
+  final static String RESPONSE_TYPE = "game";
 
   String id;
   String name;
   
 
-  public JoinGameResponse() {
+  public GameResponse() {
     type=RESPONSE_TYPE;
   }
 
@@ -30,12 +30,12 @@ public class JoinGameResponse extends BaseResponse {
     this.id = id;
   }
 
-  public JoinGameResponse name(String name) {
+  public GameResponse name(String name) {
     setName(name);
     return this;
   }
 
-  public JoinGameResponse id(String id) {
+  public GameResponse id(String id) {
     setId(id);
     return this;
   }
@@ -44,10 +44,10 @@ public class JoinGameResponse extends BaseResponse {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof JoinGameResponse)) {
+        if (!(o instanceof GameResponse)) {
             return false;
         }
-        JoinGameResponse gameResponse = (JoinGameResponse) o;
+        GameResponse gameResponse = (GameResponse) o;
         return Objects.equals(name, gameResponse.name) && Objects.equals(id, gameResponse.id);
   }
 

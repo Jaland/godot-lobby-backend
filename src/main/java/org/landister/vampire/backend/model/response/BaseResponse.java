@@ -5,7 +5,7 @@ import java.util.Objects;
 // Note make sure that all constructors have the type="type" in them
 public class BaseResponse {
 
-  String type;
+  protected String type;
 
 
   public BaseResponse() {
