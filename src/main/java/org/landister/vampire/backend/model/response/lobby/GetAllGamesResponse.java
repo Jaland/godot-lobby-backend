@@ -1,7 +1,10 @@
-package org.landister.vampire.backend.model.response;
+package org.landister.vampire.backend.model.response.lobby;
 
 import java.util.List;
 import java.util.Objects;
+
+import org.landister.vampire.backend.model.response.BaseResponse;
+import org.landister.vampire.backend.model.response.GameResponse;
 
 public class GetAllGamesResponse extends BaseResponse {
 

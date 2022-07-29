@@ -5,19 +5,14 @@ import java.util.Objects;
 import org.landister.vampire.backend.model.response.BaseResponse;
 import org.landister.vampire.backend.model.response.GameResponse;
 
-public class GameLobbyResponse extends BaseResponse {
+public class NewGameResponse extends BaseResponse {
 
-  final static String RESPONSE_TYPE = "join_game";
+  final static String RESPONSE_TYPE = "new_game";
 
-  GameResponse game;
+  public GameResponse game;
 
-  public GameLobbyResponse() {
+  public NewGameResponse() {
     type = RESPONSE_TYPE;
-  }
-
-
-  public GameLobbyResponse(GameResponse game) {
-    this.game = game;
   }
 
   public GameResponse getGame() {
@@ -28,7 +23,7 @@ public class GameLobbyResponse extends BaseResponse {
     this.game = game;
   }
 
-  public GameLobbyResponse game(GameResponse game) {
+  public NewGameResponse game(GameResponse game) {
     setGame(game);
     return this;
   }
@@ -37,11 +32,11 @@ public class GameLobbyResponse extends BaseResponse {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof GameLobbyResponse)) {
+        if (!(o instanceof NewGameResponse)) {
             return false;
         }
-        GameLobbyResponse gameLobbyResponse = (GameLobbyResponse) o;
-        return Objects.equals(game, gameLobbyResponse.game);
+        NewGameResponse newGameResponse = (NewGameResponse) o;
+        return Objects.equals(game, newGameResponse.game);
   }
 
   @Override
@@ -55,6 +50,5 @@ public class GameLobbyResponse extends BaseResponse {
       " game='" + getGame() + "'" +
       "}";
   }
-  
 
 }

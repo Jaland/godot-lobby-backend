@@ -1,57 +1,52 @@
 package org.landister.vampire.backend.websocket;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.enterprise.context.ApplicationScoped;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnOpen;
+import javax.inject.Inject;
 import javax.websocket.Session;
 
 import org.jboss.logging.Logger;
+import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.ChatRequest;
-import org.landister.vampire.backend.model.request.UserRequest;
 import org.landister.vampire.backend.model.response.chat.ChatResponse;
 import org.landister.vampire.backend.model.session.UserSession;
+import org.landister.vampire.backend.services.SessionCacheService;
 
+/**
+ * Contains the chat logic related to any websocket connection that extends this class.
+ */
 @ApplicationScoped
 public class ChatController extends BaseController {
 
 
-    // Maps game Id to Session Ids
-    protected Map<String, ArrayList<String>> gameChatSessions = new ConcurrentHashMap<>();
+    @Inject
+    SessionCacheService sessionCacheService;
 
     private static final Logger LOG = Logger.getLogger(ChatController.class);
 
-    @OnOpen
-    public void onOpen(Session session) {
-        super.onOpen(session);
-    }
 
-    @OnClose
-    public void onClose(Session session) {
-        UserSession userSession = super.onCloseBase(session);
+    public UserSession onCloseChat(Session session) {
+        UserSession userSession = sessionCacheService.getUserSessionFromSessionId(session.getId());
         if (userSession != null) {
-            broadcastMessageToGame(userSession.getGameId(), new ChatResponse("[color=red][b]" + userSession.getUsername() + "[/b] has left the chat[/color]"));
+            sessionCacheService.removeUserFromAllGames(userSession.getUsername());
+            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getGameId(), "Left the chat", "red"));
         }
+        return userSession;
     }
 
-    @OnError
-    public void onError(Session session, Throwable throwable) {
-        UserSession userSession = super.onErrorBase(session, throwable);
+    public UserSession onErrorChat(Session session, Throwable throwable) {
+        UserSession userSession = sessionCacheService.getUserSessionFromSessionId(session.getId());
+        super.onError(session, throwable);
         if (userSession != null) {
-            broadcastMessageToGame(userSession.getGameId(), new ChatResponse("[color=red][b]" + userSession.getUsername() + "[/b] has left the chat[/color]"));
+            sessionCacheService.removeUserFromAllGames(userSession.getUsername());
+            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getGameId(), "errored out the chat", "pink"));
         }
+        return userSession;
     }
 
-    public UserRequest onMessageBase(Session session, String message) {
-        UserRequest request = super.onMessageBase(session, message);
-        UserSession userSession = sessionCacheService.getUserSession(request.getGameId(), session.getId());
+    public void onMessageChat(BaseRequest request, UserSession userSession, Session session) {
         switch (request.getRequestType()) {
-            case AUTH:
-            broadcastMessageToGame(request.getGameId(), new ChatResponse("[color=green][b]" + userSession.getUsername() + "[/b] has joined the chat[/color]"));
+            case INITIAL_REQUEST:
+                broadcastMessageToGame(request.getGameId(), new ChatResponse("[color=green][b]" + userSession.getUsername() + "[/b] has joined the chat[/color]"));
                 break;
             case CHAT:
                 processMessage(session, (ChatRequest)request, userSession);
@@ -59,11 +54,26 @@ public class ChatController extends BaseController {
             default:
                 break;
         }
-        return request;
     }
 
     public void processMessage(Session session, ChatRequest request, UserSession userSession) {
         broadcastMessageToGame(request.getGameId(), new ChatResponse("[b]" + userSession.getUsername() + ":[/b] " + request.getMessage()));
+    }
+
+    /**
+     * Returns a formated ChatResponse with the message and the username
+     * 
+     * @param user username of the user
+     * @param message The message to be sent to the game
+     * @param color (optional) - the color of the message (also accepts hex values) - https://htmlcolorcodes.com/
+     * @return
+     */
+    protected ChatResponse userMessage(String user, String message, String... color) {
+        String response = "[b]" + user + ":[/b] " + message;
+        if(color != null && color.length > 0) {
+            response = "[color=" + color[0] + "]" + response + "[/color]";
+        }
+        return new ChatResponse(response);
     }
 
 }

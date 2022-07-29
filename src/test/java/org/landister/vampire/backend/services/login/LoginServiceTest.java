@@ -1,13 +1,11 @@
 package org.landister.vampire.backend.services.login;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.Test;
-import org.landister.vampire.backend.util.PasswordService;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.jwt.auth.principal.JWTParser;

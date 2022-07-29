@@ -19,8 +19,8 @@ public class LoginService {
 	@ConfigProperty(name = "jwt.secret")
 	String jwtSecret;
 
-	// int jwtExpirationTime = 18000;
-	int jwtExpirationTime = 0;
+	@ConfigProperty(name = "jwt.timeout")
+	int jwtExpirationTime;
 
 	/**
 	 * Authenticates a user and returns a JWT token if the credentials are valid.

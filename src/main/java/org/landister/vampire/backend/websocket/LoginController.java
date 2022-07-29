@@ -1,5 +1,6 @@
 package org.landister.vampire.backend.websocket;
 
+import java.io.IOException;
 import java.util.Base64;
 
 import javax.enterprise.context.RequestScoped;
@@ -12,7 +13,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.services.login.LoginService;
 
@@ -38,23 +39,26 @@ public class LoginController extends BaseController{
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        super.onErrorBase(session, throwable);
+        super.onError(session, throwable);
     }
 
     @OnMessage
-    public void onMessage(Session session, String encodedMessage) {
+    public void onMessage(Session session, String encodedMessage) throws IOException {
         try {
             LOG.debug("Message for: " + session.getId() + ": " + encodedMessage);
             String message = new String(Base64.getDecoder().decode(encodedMessage));
-            LoginRequest request = (LoginRequest) mapper.readValue(message, UserRequest.class);
+            LoginRequest request = (LoginRequest) mapper.readValue(message, BaseRequest.class);
             if(request.getRegister()) {
                 loginService.register(request);
             }
+
+            // Create our Java Web Token and return it to the client.
             String jwtToken = loginService.login(request.getUsername(), request.getPassword());
             session.getAsyncRemote().sendText(Base64.getEncoder().encodeToString(jwtToken.getBytes()));
+            
         } catch (Exception e) {
             LOG.error("Invalid Message passed to login", e);
-            sessionCacheService.closeSession(session, "Invalid login");
+            session.close();
         }
     }
 

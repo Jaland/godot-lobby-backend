@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.landister.vampire.backend.model.request.ChatRequest;
-import org.landister.vampire.backend.model.request.UserRequest;
+import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -18,31 +18,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-public class PropertyBasedDeserializer<T> extends StdDeserializer<UserRequest> {
+public class PropertyBasedDeserializer<T> extends StdDeserializer<BaseRequest> {
 
   public PropertyBasedDeserializer() {
-    super(UserRequest.class);
+    super(BaseRequest.class);
   }
 
-  private Map<String, Class<? extends UserRequest>> deserializationClasses;
+  private Map<String, Class<? extends BaseRequest>> deserializationClasses;
 
-  public PropertyBasedDeserializer(Class<UserRequest> baseClass) {
+  public PropertyBasedDeserializer(Class<BaseRequest> baseClass) {
       super(baseClass);
-      deserializationClasses = new HashMap<String, Class<? extends UserRequest>>();
+      deserializationClasses = new HashMap<String, Class<? extends BaseRequest>>();
   }
 
-  public void register(String property, Class<? extends UserRequest> deserializationClass) {
+  public void register(String property, Class<? extends BaseRequest> deserializationClass) {
       deserializationClasses.put(property, deserializationClass);
   }
 
   @Override
-  public UserRequest deserialize(JsonParser p, DeserializationContext ctxt)
+  public BaseRequest deserialize(JsonParser p, DeserializationContext ctxt)
           throws IOException, JsonProcessingException {
 
       ObjectMapper mapper = (ObjectMapper) p.getCodec();
       JsonNode tree = mapper.readTree(p);
       
-      Class<? extends UserRequest> deserializationClass = findDeserializationClass(tree);
+      Class<? extends BaseRequest> deserializationClass = findDeserializationClass(tree);
       if (deserializationClass == null) {
           throw JsonMappingException.from(ctxt, 
              "No registered unique properties found for polymorphic deserialization");
@@ -51,12 +51,12 @@ public class PropertyBasedDeserializer<T> extends StdDeserializer<UserRequest> {
       return mapper.treeToValue(tree, deserializationClass);
   }
   
-  private Class<? extends UserRequest> findDeserializationClass(JsonNode tree) {
+  private Class<? extends BaseRequest> findDeserializationClass(JsonNode tree) {
     JsonNode requestTypeNode = tree.get("requestType");
     if(requestTypeNode == null || requestTypeNode.asText().isEmpty())
         throw new IllegalArgumentException("No requestType found in request");
 
-    UserRequest.RequestType requestType = UserRequest.RequestType.valueOf(requestTypeNode.asText());
+    BaseRequest.RequestType requestType = BaseRequest.RequestType.valueOf(requestTypeNode.asText());
     
     if(requestType.getRequestClass() == null) 
         throw new IllegalArgumentException("No deserialization class found for requestType " + requestType);
