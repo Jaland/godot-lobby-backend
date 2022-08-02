@@ -10,7 +10,7 @@ public class ChatRequest extends BaseRequest {
 
   String message;
 
-
+  
   public ChatRequest() {
   }
 

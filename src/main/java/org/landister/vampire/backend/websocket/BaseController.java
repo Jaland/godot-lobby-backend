@@ -73,8 +73,7 @@ public class BaseController {
         }
         switch (request.getRequestType()){
             case INITIAL_REQUEST:
-                sessionCacheService.addToSession(SessionCacheService.GLOBAL_GAME_ID, new UserSession()
-                    .gameId(SessionCacheService.GLOBAL_GAME_ID).username(request.getJwt().getName()).session(session).token(request.getToken()));
+                initialRequest(session, (InitialRequest)request);
                 break;
             default:
                 break;
@@ -82,7 +81,35 @@ public class BaseController {
         return request;
     }
 
+    public void initialRequest(Session session, InitialRequest request) {
+        LOG.info("Initial request from " + request.getJwt().getName());
+      
+        UserSession userSession = new UserSession().session(session).gameId(SessionCacheService.GLOBAL_GAME_ID).username(request.getJwt().getName()).session(session)
+            .token(request.getToken());
 
+        //If the GameId is not null, then attempt to restore the user to the game they were in.
+        if(request.getGameId() != null) {
+            try{ 
+                restoreSession(session, request.getGameId(), userSession);
+            } catch(Exception e) {
+                LOG.error("Error restoring user to game: " + request.getGameId());
+            }
+        }
+        //Otherwise set the user's game to the lobby
+        request.setGameId(SessionCacheService.GLOBAL_GAME_ID);
+    }
+
+
+    /*
+     * Restore the user to the game they were in.
+     * 
+     * Note this will just set the request gameId to the game they were in. Logic for restoring needs to happen in the lobby controller
+     * 
+     */
+    private UserSession restoreSession(Session session, String gameId, UserSession userSession) {
+        LOG.info("Restoring session " + session.getId() + " to game " + gameId);
+        return sessionCacheService.getUserSessionFromUsername(gameId, userSession.getUsername());
+    }
 
     protected void broadcastMessageToGame(String gameId, BaseResponse response) {
         sessionCacheService.getGameSessions(gameId).values().forEach(s -> {
@@ -98,9 +125,9 @@ public class BaseController {
         });
     }
 
-    protected void broadcastMessageToUser(BaseResponse response, UserSession userSession) {
+    protected void broadcastMessageToUser(BaseResponse response, Session session) {
         try {
-        userSession.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
+            session.getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
             if (result.getException() != null) {
                 LOG.error("Unable to send message: " + result.getException() + "\n");
             }

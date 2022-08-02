@@ -10,6 +10,7 @@ import javax.inject.Inject;
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.game.Game;
+import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.util.exceptions.NotFoundException;
 
@@ -24,10 +25,11 @@ public class GameService {
 
   private static final Logger LOG = Logger.getLogger(GameService.class);
 
-  public Game createGame(UserSession user) {
+  public Game createGame(UserSession user, CreateGameRequest request) {
 		Game game = new Game();
 		game.setOwner(user.getUsername());
 		game.setUsers(List.of(user.getUsername()));
+    game.setName(request.getName());
 		game.persist();
 		return game;
 	}
@@ -50,7 +52,7 @@ public class GameService {
     if(Objects.equals(gameId, SessionCacheService.GLOBAL_GAME_ID)){
       return null;
     }
-    Game game=Game.findById(gameId);
+    Game game=Game.findById(new ObjectId(gameId));
     if(game==null){
       throw new NotFoundException("Game not found in database for id=" + gameId);
     }
@@ -62,7 +64,7 @@ public class GameService {
         //If the users in our game is empty, we delete the game
         game.delete();
     } else {
-        game.persist();
+        game.update();
     }
     return game;
   }

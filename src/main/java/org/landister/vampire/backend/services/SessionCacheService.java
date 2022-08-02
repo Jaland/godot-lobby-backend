@@ -74,11 +74,11 @@ public class SessionCacheService {
     }
 
     public UserSession removeUser(String gameId, String username) {
-        Map<String, UserSession> gameSessions = gameToSessionsMap.get(gameId);
-        if (gameSessions == null) {
+        Map<String, UserSession> gameSession = gameToSessionsMap.get(gameId);
+        if (gameSession == null) {
             return null;
         }
-        UserSession userSession = gameSessions.remove(username);
+        UserSession userSession = gameSession.remove(username);
         if(userSession != null) {
             sessionToUserSessionMap.remove(userSession.getSession().getId());
         }
@@ -115,7 +115,7 @@ public class SessionCacheService {
         }
         UserSession userSession = gameSessions.get(username);
         if (userSession == null) {
-            LOG.error("Session not found in game for user: " + username);
+            LOG.error("Session not found in game for user: " + username + " in game: " + gameId);
             throw new NotFoundException("Session not found");
         }
         return userSession;

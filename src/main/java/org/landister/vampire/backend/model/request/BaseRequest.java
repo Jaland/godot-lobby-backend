@@ -8,6 +8,7 @@ import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinLobbyRequest;
+import org.landister.vampire.backend.model.request.lobby.LeaveGameRequest;
 import org.landister.vampire.backend.model.request.lobby.LobbyRefreshRequest;
 import org.landister.vampire.backend.services.SessionCacheService;
 import org.landister.vampire.backend.util.PropertyBasedDeserializer;
@@ -25,7 +26,8 @@ public class BaseRequest {
     JOIN_LOBBY(JoinLobbyRequest.class),
     LOBBY_REFRESH(LobbyRefreshRequest.class),
     CREATE_GAME(CreateGameRequest.class), 
-    JOIN_GAME(JoinGameRequest.class),;
+    JOIN_GAME(JoinGameRequest.class),
+    LEAVE_GAME(LeaveGameRequest.class),;
 
   Class<? extends BaseRequest> requestClass;
 
