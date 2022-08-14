@@ -4,6 +4,8 @@ public final class Colors {
 
   public static final String AQUAMARINE = "#7FFFD4";
   public static final String BLACK = "#000000";
+  public static final String WHITE = "#FFFFFF";
+  public static final String EGG_SHELL = "#FCF5E6";
   public static final String BLUE = "#0000FF";
   public static final String BLUE_VIOLET = "#8A2BE2";
   public static final String BROWN = "#A52A2A";
@@ -28,6 +30,6 @@ public final class Colors {
   public static final String ORANGE = "#FFA500";
   public static final String PINK = "#FF00FF";
   public static final String RED = "#FF0000";
-  
-  
+  public static final String BURNT_ORANGE = "#C64600";
+
 }

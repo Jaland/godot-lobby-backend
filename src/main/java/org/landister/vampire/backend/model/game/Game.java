@@ -23,7 +23,7 @@ public class Game extends PanacheMongoEntity{
 
   String owner;
 
-  List<String> users;
+  List<String> users = List.of();
 
 
   public String getIdHexString(){

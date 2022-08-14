@@ -43,3 +43,4 @@ nb-configuration.xml
 
 *.local
 application-local.properties
+application-test.properties

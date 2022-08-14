@@ -1,10 +1,10 @@
 package org.landister.vampire.backend.services;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -20,7 +20,6 @@ import org.landister.vampire.backend.util.exceptions.NotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.User;
 
 /**
  * This class is a service that caches the session of a user.
@@ -46,6 +45,7 @@ public class SessionCacheService {
 
     /**
      * Used to allow us to find a user session based on the websocket session.
+     * Note: gameToSessionMap should be primary way to find a session, this is used for speed when we don't have the game id (i.e. throwing errors)
      */
     private Map<String, UserSession> sessionToUserSessionMap = new ConcurrentHashMap<>();
 
@@ -56,31 +56,55 @@ public class SessionCacheService {
     /**
      * Adds user to the session cache of a specific game.
      * 
+     * 
      * @param gameId
      * @param userSession
+     *
+     * @throws RuntimeException This method will automatically close the existing websocket session if the user is already in the game and use the newly supplied session to prevent issues with multiple sessions for a single user. If the user tries to double connect with the same session somehow it means there is probably an error in the code and the user will be kicked and this error will be thrown
      */
-    public void addToSession(String gameId, UserSession userSession) {
-        Map<String, UserSession> gameSessions = gameToSessionsMap.get(gameId);
-        if (gameSessions == null) {
+    public void addToGamesCache(String gameId, UserSession userSession) {
+        LOG.debug("Adding user to session cache, gameId=" + gameId + ", userSession=" + userSession);
+        // Get the game to add the user to
+        Map<String, UserSession> gameSessions = getGameSessions(gameId);
+        if(gameSessions==null){
             gameSessions = new ConcurrentHashMap<>();
             gameToSessionsMap.put(gameId, gameSessions);
         }
+        // Validate the user is not already in the game
+        if (gameSessions.containsKey(userSession.getUsername())) {
+            LOG.info("User already in session cache, gameId=" + gameId + ", userSession=" + userSession + " Replacing old session");
+            UserSession existingSession = gameSessions.get(userSession.getUsername());
+            try {
+                existingSession.getSession().close(new CloseReason(CloseCodes.VIOLATED_POLICY, "User trying to join a game they are already in"));
+            } catch (IOException e) {
+                LOG.error("Error closing session", e);
+            }
+            gameSessions.remove(userSession.getUsername());
+            if(userSession.getSession().getId().equals(existingSession.getSession().getId())){
+                throw new RuntimeException("User attempted to double join a game using the same websocket session");
+            }
+        }
+        // Important: Make sure to add the user to the game session map AND session to user session map so we can find the user session on error
         gameSessions.put(userSession.getUsername(), userSession);
         sessionToUserSessionMap.put(userSession.getSession().getId(), userSession);
     }
 
-    public UserSession removeUserFromLobby(String username) {
-        return removeUser(GLOBAL_GAME_ID, username);
+    public UserSession removeFromLobbyCache(String username) {
+        return removeFromGamesCache(GLOBAL_GAME_ID, username);
     }
 
-    public UserSession removeUser(String gameId, String username) {
-        Map<String, UserSession> gameSession = gameToSessionsMap.get(gameId);
-        if (gameSession == null) {
-            return null;
+    public UserSession removeFromGamesCache(String gameId, String username) {
+        LOG.debug("Removing user from session cache, gameId=" + gameId + ", username=" + username);
+        Map<String, UserSession> gameSession = getGameSessions(gameId);
+        if(gameSession==null){
+          LOG.info("Game not found in cache for id=" + gameId);
+          return null;
         }
         UserSession userSession = gameSession.remove(username);
         if(userSession != null) {
             sessionToUserSessionMap.remove(userSession.getSession().getId());
+        } else {
+            LOG.info("User not found in session cache, gameId=" + gameId + ", username=" + username);
         }
         return userSession;
     }
@@ -91,10 +115,11 @@ public class SessionCacheService {
      * @param sessionId
      * @return
      */
-    public UserSession removeUserFromAllGames(String username) {
+    public UserSession removeUserFromAllGamesCache(String username) {
+        LOG.debug("Removing user from all games: " + username);
         UserSession userSession = null;
         for (String gameId : gameToSessionsMap.keySet()) {
-            UserSession userSessionFromGame = removeUser(gameId, username);
+            UserSession userSessionFromGame = removeFromGamesCache(gameId, username);
             userSession = userSessionFromGame != null ? userSessionFromGame : userSession;
         }
         return userSession;
@@ -108,7 +133,7 @@ public class SessionCacheService {
      * @return
      */
     public UserSession getUserSessionFromUsername(String gameId, String username) {
-        Map<String, UserSession> gameSessions = gameToSessionsMap.get(gameId);
+        Map<String, UserSession> gameSessions = getGameSessions(gameId);
         if (gameSessions == null) {
             LOG.error("Game not found in cache: " + gameId);
             throw new NotFoundException("Game not found");
@@ -121,15 +146,27 @@ public class SessionCacheService {
         return userSession;
     }
 
-    public void validateUserSession(Session session, UserSession userSession) {
-        if (userSession.getSession() != session) {
-            LOG.error("Session mismatch: " + session.getId() + " != " + userSession.getSession().getId());
-            throw new AuthenticationFailedException("Session mismatch");
+
+    /**
+     * Gets user session from the session cache
+     * 
+     * @param gameId
+     * @param sessionId
+     * @return
+     */
+    public UserSession getUserSessionFromUsername(String username) {
+        for (String gameId : gameToSessionsMap.keySet()) {
+            UserSession userSessionFromGame = gameToSessionsMap.get(gameId).get(username);
+            if(userSessionFromGame != null) {
+                return userSessionFromGame;
+            }
         }
+        return null;
     }
 
     /**
      * Gets user session from the session cache based on session
+     * 
      * @param sessionId
      * @return
      */
@@ -138,17 +175,56 @@ public class SessionCacheService {
     }
 
     /**
-     * Gets game session information from the session cache.
+     * Gets all users with valid open sessions in a game.
+     * Note: the reverse could be tricky without going to the database since the user may not be in the cache.
+     * 
+     * @param gameId
+     * @return
+     */
+    public Stream<UserSession> getConnectedUserSessionsFromGame(String gameId) {
+        return getUsersSessionsFromGame(gameId).filter(userSesssion -> userSesssion.getSession().isOpen());
+    }
+
+
+    public Stream<UserSession> getUsersSessionsFromGame(String gameId) {
+        Map<String, UserSession> gameSessions = getGameSessions(gameId);
+        if (gameSessions == null) {
+            LOG.error("Game not found in cache: " + gameId);
+            throw new NotFoundException("Game not found");
+        }
+        return gameSessions.values().stream();
+    }
+
+    /**
+     * Gets game session information from the session cache, or from db if unable to find it is in the cache.
+     * 
      * @param gameId
      * @return
      */
     public Map<String, UserSession> getGameSessions(String gameId) {
-        return gameToSessionsMap.get(gameId);
+        Map<String, UserSession> gameSessions = gameToSessionsMap.get(gameId);
+        // If the game is not found in cache check if it is a global game or in the database
+        if (gameSessions == null) {
+            // If the game is the global game then add to cache and return empty map
+            if(gameId.equals(GLOBAL_GAME_ID)) {
+                gameToSessionsMap.put(GLOBAL_GAME_ID, new ConcurrentHashMap<>());
+                return gameToSessionsMap.get(GLOBAL_GAME_ID);
+            }
+            // If game is not found in session check if it is in the database
+            Game game = gameService.getGame(gameId);
+            if(game != null) {
+                // If game is in the database then add to cache and return empty map
+                gameToSessionsMap.put(gameId, new ConcurrentHashMap<>());
+                return gameToSessionsMap.get(gameId);
+            }
+        }
+        // If the game is found in cache return it (otherwise it is null)
+        return gameSessions;
     }
     
     public void changeGames(String oldGameId, String newGameId, UserSession userSession) {
-        removeUser(oldGameId, userSession.getUsername());
-        addToSession(newGameId, userSession);
+        removeFromGamesCache(oldGameId, userSession.getUsername());
+        addToGamesCache(newGameId, userSession);
     }
 
 

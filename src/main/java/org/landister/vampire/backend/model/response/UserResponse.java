@@ -3,15 +3,16 @@ package org.landister.vampire.backend.model.response;
 import java.util.Objects;
 
 public class UserResponse extends BaseResponse{
+  
+  final static String RESPONSE_TYPE = "user";
 
   String username;
-  
+  // Assume connected
+  boolean connected = true;
+
 
   public UserResponse() {
-  }
-
-  public UserResponse(String username) {
-    this.username = username;
+    type=RESPONSE_TYPE;
   }
 
   public String getUsername() {
@@ -22,8 +23,25 @@ public class UserResponse extends BaseResponse{
     this.username = username;
   }
 
+  public boolean isConnected() {
+    return this.connected;
+  }
+
+  public boolean getConnected() {
+    return this.connected;
+  }
+
+  public void setConnected(boolean connected) {
+    this.connected = connected;
+  }
+
   public UserResponse username(String username) {
     setUsername(username);
+    return this;
+  }
+
+  public UserResponse connected(boolean connected) {
+    setConnected(connected);
     return this;
   }
 
@@ -35,20 +53,21 @@ public class UserResponse extends BaseResponse{
             return false;
         }
         UserResponse userResponse = (UserResponse) o;
-        return Objects.equals(username, userResponse.username);
+        return Objects.equals(username, userResponse.username) && connected == userResponse.connected;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(username);
+    return Objects.hash(username, connected);
   }
 
   @Override
   public String toString() {
     return "{" +
       " username='" + getUsername() + "'" +
+      ", connected='" + isConnected() + "'" +
       "}";
   }
-  
-  
+
+
 }

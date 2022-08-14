@@ -1,5 +1,6 @@
 package org.landister.vampire.backend.websocket;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,7 +17,6 @@ import org.jboss.logging.Logger;
 import org.landister.vampire.backend.mapper.GameMapper;
 import org.landister.vampire.backend.model.game.Game;
 import org.landister.vampire.backend.model.request.BaseRequest;
-import org.landister.vampire.backend.model.request.BaseRequest.RequestType;
 import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
@@ -65,27 +65,19 @@ public class LobbyController extends ChatController {
     public void onClose(Session session) {
         UserSession userSession = super.onCloseChat(session);
         if(userSession != null) {
-            cacheService.removeUserFromAllGames(userSession.getUsername());
+            cacheService.removeUserFromAllGamesCache(userSession.getUsername());
         }
     }
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        UserSession userSession = super.onErrorChat(session, throwable);
-        if (userSession != null) {
-            broadcastMessageToGame(userSession.getGameId(), new ChatResponse("[color=red][b]" + userSession.getUsername() + "[/b] has left the chat[/color]"));
-        }
+        super.onErrorChat(session, throwable);
     }
 
     @OnMessage
     public void onMessage(Session session, String message) {
         LOG.debug("Processing: " + message);
         BaseRequest request = super.onMessageBase(session, message);
-        // Need to handle initial request separately since user info not in cache yet
-        if(request.getRequestType() == RequestType.INITIAL_REQUEST) {
-            handleInitialRequest(session, (InitialRequest)request);
-            return;
-        }
         UserSession userSession = sessionCacheService.getUserSessionFromUsername(request.getGameId(), request.getJwt().getName());
         onMessageChat(request, userSession, session);
         switch (request.getRequestType()) {
@@ -112,7 +104,7 @@ public class LobbyController extends ChatController {
             .games(
                 games.map(gameMapper::toGameResponse).collect(Collectors.toList())
             );
-        broadcastMessageToUser(response, session);
+        broadcastMessageToUser(session, response);
     }
 
     private void createGame(Session session, CreateGameRequest request, UserSession userSession) {
@@ -121,8 +113,8 @@ public class LobbyController extends ChatController {
         LOG.info("User " + userSession.getUsername() + " created game: " + game.getIdHexString());
         GameResponse gameResponse = gameMapper.toGameResponse(game);
         // Send a join game request to the user who created the game.
-        broadcastMessageToUser(new GameLobbyResponse().game(gameResponse), session);
-        // Send a new game request to all users in the lobby.
+        broadcastMessageToUser(session, new GameLobbyResponse().game(gameResponse));
+        // Send a chat message to everyone letting them know they have a new friend.
         broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, new NewGameResponse().game(gameResponse));
     }
 
@@ -130,36 +122,101 @@ public class LobbyController extends ChatController {
     private void joinGame(Session session, String gameIdToJoin, UserSession userSession) {
         Game game = gameService.joinGame(userSession, gameIdToJoin);
         cacheService.changeGames(SessionCacheService.GLOBAL_GAME_ID, game.getIdHexString(), userSession);
-        LOG.debug("User " + userSession.getUsername() + " joined game: " + game.getIdHexString());
-        GameResponse gameResponse = gameMapper.toGameResponse(game);
+        LOG.info("User " + userSession.getUsername() + " joined game: " + game.getIdHexString());
+        GameResponse gameResponse = gameResponseFromGame(game);
         // Send a join game request to the user who joined the game.
-        broadcastMessageToUser(new GameLobbyResponse().game(gameResponse), session);
+        broadcastMessageToUser(session, new GameLobbyResponse().game(gameResponse));
+        // Send an update to all other user's game info in the game.
+        broadcastMessageToGame(game.getIdHexString(), gameResponse, userSession.getUsername());
         // Send a message to all users in the game that the user joined.
-        broadcastMessageToGame(game.getIdHexString(), userMessage(userSession.getUsername(), "Joined the Game Chat", Colors.AQUAMARINE));
+        broadcastMessageToGame(game.getIdHexString(), userMessage(userSession.getUsername(), "Joined the Game", Colors.AQUAMARINE));
     }
 
 
     private void joinLobby(Session session, String gameIdLeaving, UserSession userSession) {
+        LOG.info("User: " + userSession.getUsername() + " Joining Lobby, leaving game: " + gameIdLeaving);
         if(gameIdLeaving != null) {     
-            gameService.leaveGame(gameIdLeaving, userSession.getUsername());
-            broadcastMessageToGame(gameIdLeaving, userMessage(userSession.getUsername(), "Left the game", Colors.DARK_MAGENTA));
+            Game game = gameService.leaveGame(gameIdLeaving, userSession.getUsername());
+            broadcastMessageToGame(gameIdLeaving, userMessage(userSession.getUsername(), "Left the Game", Colors.DARK_MAGENTA));
             cacheService.changeGames(gameIdLeaving, SessionCacheService.GLOBAL_GAME_ID, userSession);
+            // Send an update to all other user's game info in the game.
+            broadcastMessageToGame(gameIdLeaving, gameResponseFromGame(game), userSession.getUsername());
         } else {
-            cacheService.addToSession(SessionCacheService.GLOBAL_GAME_ID, userSession);
+            cacheService.addToGamesCache(SessionCacheService.GLOBAL_GAME_ID, userSession);
         }
         // Return the user to the lobby.
-        broadcastMessageToUser(new LeaveGameResponse(), session);
+        broadcastMessageToUser(session, new LeaveGameResponse());
         // Send a message to all users in the game that the user joined.
         broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, userMessage(userSession.getUsername(), "Joined the Lobby", Colors.DARK_GREEN));
     }
 
 
-    private void handleInitialRequest(Session session, InitialRequest request) {
-        UserSession userSession = new UserSession().username(request.getJwt().getName()).gameId(request.getGameId()).session(session);
-        if(request.getGameId() != SessionCacheService.GLOBAL_GAME_ID) {
-            joinGame(session, request.getGameId(), userSession);
+    ////////////////////////////////////////////////
+    // Utility Methods                           //
+    ///////////////////////////////////////////////
+
+    /**
+     * Gets game response from game and checks cache for disconnected users
+     * 
+     * @param game
+     * @return
+     */
+    private GameResponse gameResponseFromGame(Game game) {
+        GameResponse gameResponse = gameMapper.toGameResponse(game);
+        List <String> connectedUsers = cacheService.getConnectedUserSessionsFromGame(game.getIdHexString()).map(UserSession::getUsername).collect(Collectors.toList());
+        gameResponse.getUsers().forEach(user -> {
+            if(connectedUsers.contains(user.getUsername())) {
+                user.setConnected(true);
+            } else {
+                user.setConnected(false);
+            }
+        });
+        return gameResponse;
+    }
+
+
+    ////////////////////////////////////////////////////////
+    // Methods for handling initial requests from login   //
+    ////////////////////////////////////////////////////////
+
+
+    @Override
+    public void initialRequest(Session session, InitialRequest request) {
+        LOG.info("Initial request from " + request.getJwt().getName());
+      
+        // Check to see if the user is in a game.
+        UserSession userSession = sessionCacheService.getUserSessionFromUsername(request.getJwt().getName());
+        if(userSession != null) {
+            // Since the userSession was retrieved from the cache, need to do a deep copy to create a new user session.
+            userSession = UserSession.clone(userSession);
+            userSession.session(session);
+            if(userSession.getGameId() != SessionCacheService.GLOBAL_GAME_ID) {
+                // If the user is in a game try to allow them to rejoin.
+                joinGame(session, userSession.getGameId(), userSession);
+                return;
+            } else {
+                // If the user is in the lobby, send them to the lobby.
+                joinLobby(session, null, userSession);
+                return;
+            }
         } else {
-            joinLobby(session, null, userSession);
+            checkDatabaseForGame(session, request.getJwt().getName());
         }
+    }
+
+    private void checkDatabaseForGame(Session session, String username) {
+        List<Game> games = gameService.getGamesByUsername(username);
+        if(games.size() > 1) {
+            LOG.error("User " + username + " has more than one game in the database. Removing them from all games.");
+            games.forEach(game -> gameService.leaveGame(game.getIdHexString(), username));
+        } else if (games.size() == 1) {
+            // If the user is in a game, send them to the game.
+            LOG.info("User " + username + " is in game " + games.get(0).getIdHexString() + " restoring session.");
+            joinGame(session, games.get(0).getIdHexString(), new UserSession().username(username).gameId(games.get(0).getIdHexString()).session(session));
+            return;
+        }
+        // If the user is not in a game, send them to the lobby.
+        joinLobby(session, null, 
+            new UserSession().username(username).session(session));
     }
 }

@@ -1,6 +1,9 @@
 package org.landister.vampire.backend.websocket;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
 
 import javax.inject.Inject;
 import javax.websocket.Session;
@@ -81,51 +84,19 @@ public class BaseController {
         return request;
     }
 
-    public void initialRequest(Session session, InitialRequest request) {
-        LOG.info("Initial request from " + request.getJwt().getName());
-      
-        UserSession userSession = new UserSession().session(session).gameId(SessionCacheService.GLOBAL_GAME_ID).username(request.getJwt().getName()).session(session)
-            .token(request.getToken());
-
-        //If the GameId is not null, then attempt to restore the user to the game they were in.
-        if(request.getGameId() != null) {
-            try{ 
-                restoreSession(session, request.getGameId(), userSession);
-            } catch(Exception e) {
-                LOG.error("Error restoring user to game: " + request.getGameId());
-            }
-        }
-        //Otherwise set the user's game to the lobby
-        request.setGameId(SessionCacheService.GLOBAL_GAME_ID);
-    }
-
-
-    /*
-     * Restore the user to the game they were in.
-     * 
-     * Note this will just set the request gameId to the game they were in. Logic for restoring needs to happen in the lobby controller
-     * 
+    /**
+     * Method should be handled by subclasses
      */
-    private UserSession restoreSession(Session session, String gameId, UserSession userSession) {
-        LOG.info("Restoring session " + session.getId() + " to game " + gameId);
-        return sessionCacheService.getUserSessionFromUsername(gameId, userSession.getUsername());
+    public void initialRequest(Session session, InitialRequest request) {
+        throw new RuntimeException("Initial request not implemented");
     }
 
-    protected void broadcastMessageToGame(String gameId, BaseResponse response) {
-        sessionCacheService.getGameSessions(gameId).values().forEach(s -> {
-            try {
-                s.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
-                    if (result.getException() != null) {
-                        LOG.error("Unable to send message: " + result.getException() + "\n");
-                    }
-                });
-            } catch (JsonProcessingException e) {
-                LOG.error("Unable to parse message: " + response + "\n");
-            }
-        });
-    }
-
-    protected void broadcastMessageToUser(BaseResponse response, Session session) {
+    /**
+     * Broadcast a message to the owner of a specific session
+     * 
+     * @param response
+     */
+    protected void broadcastMessageToUser(Session session, BaseResponse response) {
         try {
             session.getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
             if (result.getException() != null) {
@@ -135,5 +106,37 @@ public class BaseController {
         } catch (JsonProcessingException e) {
             LOG.error("Unable to parse message: " + response + "\n");
         }
+    }
+
+    /**
+     * Broadcast a message to all users in a game
+     * TODO: Make the reverse of this method for private chats, note the session method above is more efficent if just responding to a knownsession (I think)
+     * 
+     * @param gameId
+     * @param response
+     * @param username - if not included, broadcast to all users in game
+     */
+    protected void broadcastMessageToGame(String gameId, BaseResponse response, String... excludeUsernames) {
+        Map<String, UserSession> gameSession = sessionCacheService.getGameSessions(gameId);
+        if(gameSession == null) {
+            LOG.error("Broadcast Error: Game session not found for game: " + gameId);
+            return;
+        }
+        gameSession.values().forEach(s -> {
+            try {
+                //If the username is part of the exclude list, don't send the message
+                if(excludeUsernames.length > 0 && Arrays.stream(excludeUsernames).anyMatch(s.getUsername()::equals)) {
+                    return;
+                }
+                // Send the message to the user
+                s.getSession().getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
+                    if (result.getException() != null) {
+                        LOG.error("Unable to send message: " + result.getException() + "\n");
+                    }
+                });
+            } catch (JsonProcessingException e) {
+                LOG.error("Unable to parse message: " + response + "\n");
+            }
+        });
     }
 }

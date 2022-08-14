@@ -13,6 +13,15 @@ public class UserSession {
   String token;
   String gameId = SessionCacheService.GLOBAL_GAME_ID;
 
+  public static UserSession clone(UserSession session) {
+    UserSession clone = new UserSession();
+    clone.session = session.session;
+    clone.username = session.username;
+    clone.token = session.token;
+    clone.gameId = session.gameId;
+    return clone;
+  }
+
 
   public UserSession() {
   }

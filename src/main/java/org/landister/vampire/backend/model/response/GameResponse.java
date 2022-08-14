@@ -9,7 +9,7 @@ public class GameResponse extends BaseResponse {
 
   String id;
   String name;
-  List<String> users;
+  List<UserResponse> users;
   
 
   public GameResponse() {
@@ -17,7 +17,7 @@ public class GameResponse extends BaseResponse {
   }
   
 
-  public GameResponse(String id, String name, List<String> users) {
+  public GameResponse(String id, String name, List<UserResponse> users) {
     this.id = id;
     this.name = name;
     this.users = users;
@@ -39,11 +39,11 @@ public class GameResponse extends BaseResponse {
     this.name = name;
   }
 
-  public List<String> getUsers() {
+  public List<UserResponse> getUsers() {
     return this.users;
   }
 
-  public void setUsers(List<String> users) {
+  public void setUsers(List<UserResponse> users) {
     this.users = users;
   }
 
@@ -57,7 +57,7 @@ public class GameResponse extends BaseResponse {
     return this;
   }
 
-  public GameResponse users(List<String> users) {
+  public GameResponse users(List<UserResponse> users) {
     setUsers(users);
     return this;
   }

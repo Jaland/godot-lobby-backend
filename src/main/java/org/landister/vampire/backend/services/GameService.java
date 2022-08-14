@@ -36,17 +36,21 @@ public class GameService {
 
 	public Game joinGame(UserSession user, String gameId) {
 		Game game = Game.findById(new ObjectId(gameId));
+    if (game.getUsers().contains(user.getUsername())) {
+      LOG.info("User " + user.getUsername() + " is already in game " + gameId);
+      return game;
+    }
 		game.getUsers().add(user.getUsername());
 		game.update();
 		return game;
 	}
   
-  public Game leaveGame(String gameId, String userName) {
+  public Game leaveGame(String gameId, String username) {
     // Remove the user from the game cache
     try {
-      UserSession userSession = cacheService.removeUser(gameId, userName);
+      cacheService.removeFromGamesCache(gameId, username);
     } catch (NotFoundException e) {
-      LOG.info("User not found in cache when removing from game for, gameId=" + gameId + ", userName=" + userName);
+      LOG.info("User not found in cache when removing from game for, gameId=" + gameId + ", userName=" + username);
     }
     // 
     if(Objects.equals(gameId, SessionCacheService.GLOBAL_GAME_ID)){
@@ -58,7 +62,7 @@ public class GameService {
     }
     // Remove users from the game (this will remove all copies of the user from the game)
     game.users(game.getUsers().stream()
-        .filter(user -> !Objects.equals(user, userName))
+        .filter(user -> !Objects.equals(user, username))
         .collect(Collectors.toList()));
     if(game.getUsers().isEmpty()) {
         //If the users in our game is empty, we delete the game
@@ -67,6 +71,14 @@ public class GameService {
         game.update();
     }
     return game;
+  }
+
+  public Game getGame(String gameId) {
+    return Game.findById(new ObjectId(gameId));
+  }
+
+  public List<Game> getGamesByUsername(String username) {
+    return Game.find("users",username).list();
   }
 
 }

@@ -7,9 +7,11 @@ import javax.websocket.Session;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.ChatRequest;
+import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.response.chat.ChatResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.SessionCacheService;
+import org.landister.vampire.backend.util.Colors;
 
 /**
  * Contains the chat logic related to any websocket connection that extends this class.
@@ -27,8 +29,8 @@ public class ChatController extends BaseController {
     public UserSession onCloseChat(Session session) {
         UserSession userSession = sessionCacheService.getUserSessionFromSessionId(session.getId());
         if (userSession != null) {
-            sessionCacheService.removeUserFromAllGames(userSession.getUsername());
-            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getGameId(), "Left the chat", "red"));
+            sessionCacheService.removeUserFromAllGamesCache(userSession.getUsername());
+            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getUsername(), "Left the chat", "red"));
         }
         return userSession;
     }
@@ -37,8 +39,8 @@ public class ChatController extends BaseController {
         UserSession userSession = sessionCacheService.getUserSessionFromSessionId(session.getId());
         super.onError(session, throwable);
         if (userSession != null) {
-            sessionCacheService.removeUserFromAllGames(userSession.getUsername());
-            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getGameId(), "errored out the chat", "pink"));
+            sessionCacheService.removeUserFromAllGamesCache(userSession.getUsername());
+            broadcastMessageToGame(userSession.getGameId(), userMessage(userSession.getUsername(), "Errored out", "pink"));
         }
         return userSession;
     }
@@ -57,7 +59,12 @@ public class ChatController extends BaseController {
     }
 
     public void processMessage(Session session, ChatRequest request, UserSession userSession) {
-        broadcastMessageToGame(request.getGameId(), new ChatResponse("[b]" + userSession.getUsername() + ":[/b] " + request.getMessage()));
+        // Message is sent to all other players in `white`.
+        broadcastMessageToGame(request.getGameId(), 
+            userMessage(userSession.getUsername(), request.getMessage(), Colors.WHITE), userSession.getUsername());
+        // Message is sent back to the original player in `egg shell white`.
+        broadcastMessageToUser(session, 
+            userMessage(userSession.getUsername(), request.getMessage(), Colors.GRAY));
     }
 
     /**
@@ -75,5 +82,7 @@ public class ChatController extends BaseController {
         }
         return new ChatResponse(response);
     }
+
+
 
 }

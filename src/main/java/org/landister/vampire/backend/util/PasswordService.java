@@ -19,7 +19,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.StartupEvent;
 
-// TODO: Stole this from online but JFC! Why does java not have a builtin way for me to do this hashing myself (not counting through rest)
+// TODO: Stole this from online but JFC! Why does java not have a builtin way for me to do this hashing myself (not counting through Rest Controllers)
 @ApplicationScoped
 public class PasswordService {
 
