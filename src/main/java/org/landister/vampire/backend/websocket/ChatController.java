@@ -7,7 +7,6 @@ import javax.websocket.Session;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.ChatRequest;
-import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.response.chat.ChatResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.SessionCacheService;
@@ -21,9 +20,14 @@ public class ChatController extends BaseController {
 
 
     @Inject
-    SessionCacheService sessionCacheService;
+    protected SessionCacheService sessionCacheService;
 
     private static final Logger LOG = Logger.getLogger(ChatController.class);
+
+
+    //================================================================================
+    // Websocket Methods
+    //================================================================================
 
 
     public UserSession onCloseChat(Session session) {
@@ -67,8 +71,14 @@ public class ChatController extends BaseController {
             userMessage(userSession.getUsername(), request.getMessage(), Colors.GRAY));
     }
 
+
+    //================================================================================
+    // Chat Utility Methods
+    //================================================================================
+
+
     /**
-     * Returns a formated ChatResponse with the message and the username
+     * Returns a formatted ChatResponse with the message and the username
      * 
      * @param user username of the user
      * @param message The message to be sent to the game
@@ -77,6 +87,21 @@ public class ChatController extends BaseController {
      */
     protected ChatResponse userMessage(String user, String message, String... color) {
         String response = "[b]" + user + ":[/b] " + message;
+        if(color != null && color.length > 0) {
+            response = "[color=" + color[0] + "]" + response + "[/color]";
+        }
+        return new ChatResponse(response);
+    }
+
+    /**
+     * Returns a formatted ChatResponse with the message, used when not related to a specific user
+     * @param user
+     * @param message
+     * @param color
+     * @return
+     */
+    protected ChatResponse infoMessage(String message, String... color) {
+        String response = message;
         if(color != null && color.length > 0) {
             response = "[color=" + color[0] + "]" + response + "[/color]";
         }

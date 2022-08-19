@@ -15,21 +15,22 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.mapper.GameMapper;
-import org.landister.vampire.backend.model.game.Game;
+import org.landister.vampire.backend.model.dao.game.Game;
 import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.response.GameResponse;
-import org.landister.vampire.backend.model.response.chat.ChatResponse;
+import org.landister.vampire.backend.model.response.StartGameResponse;
 import org.landister.vampire.backend.model.response.lobby.GameLobbyResponse;
 import org.landister.vampire.backend.model.response.lobby.GetAllGamesResponse;
 import org.landister.vampire.backend.model.response.lobby.LeaveGameResponse;
 import org.landister.vampire.backend.model.response.lobby.NewGameResponse;
 import org.landister.vampire.backend.model.session.UserSession;
-import org.landister.vampire.backend.services.GameService;
 import org.landister.vampire.backend.services.SessionCacheService;
+import org.landister.vampire.backend.services.lobby.LobbyGameService;
 import org.landister.vampire.backend.util.Colors;
+import org.landister.vampire.backend.util.exceptions.GameException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,13 +49,13 @@ public class LobbyController extends ChatController {
     GameMapper gameMapper;
 
     @Inject
-    GameService gameService;
-
-    @Inject
-    SessionCacheService cacheService;
+    LobbyGameService gameService;
 
     private static final Logger LOG = Logger.getLogger(ChatController.class);
 
+    //================================================================================
+    // WebSocket methods
+    //================================================================================
 
     @OnOpen
     public void onOpen(Session session) {
@@ -65,7 +66,7 @@ public class LobbyController extends ChatController {
     public void onClose(Session session) {
         UserSession userSession = super.onCloseChat(session);
         if(userSession != null) {
-            cacheService.removeUserFromAllGamesCache(userSession.getUsername());
+            sessionCacheService.removeUserFromAllGamesCache(userSession.getUsername());
         }
     }
 
@@ -93,13 +94,24 @@ public class LobbyController extends ChatController {
             case LEAVE_GAME:
                 joinLobby(session, request.getGameId(), userSession);
                 break;
+            case START_GAME:
+                startGame(session, request.getGameId(), userSession);
+                break;
             default:
                 break;
         }
     }
 
+
+    //================================================================================
+    // Main Lobby methods
+    //================================================================================
+
     private void refreshLobby(Session session, UserSession userSession) {
         Stream<Game> games = Game.streamAll();
+        if(games == null) {
+            return;
+        }
         GetAllGamesResponse response = new GetAllGamesResponse()
             .games(
                 games.map(gameMapper::toGameResponse).collect(Collectors.toList())
@@ -107,9 +119,14 @@ public class LobbyController extends ChatController {
         broadcastMessageToUser(session, response);
     }
 
+    //================================================================================
+    // Game Lobby methods
+    //================================================================================
+
+    //TODO: Validate this method
     private void createGame(Session session, CreateGameRequest request, UserSession userSession) {
         Game game = gameService.createGame(userSession, request);
-        cacheService.changeGames(SessionCacheService.GLOBAL_GAME_ID, game.getIdHexString(), userSession);
+        sessionCacheService.changeGames(SessionCacheService.GLOBAL_GAME_ID, game.getIdHexString(), userSession);
         LOG.info("User " + userSession.getUsername() + " created game: " + game.getIdHexString());
         GameResponse gameResponse = gameMapper.toGameResponse(game);
         // Send a join game request to the user who created the game.
@@ -121,7 +138,7 @@ public class LobbyController extends ChatController {
 
     private void joinGame(Session session, String gameIdToJoin, UserSession userSession) {
         Game game = gameService.joinGame(userSession, gameIdToJoin);
-        cacheService.changeGames(SessionCacheService.GLOBAL_GAME_ID, game.getIdHexString(), userSession);
+        sessionCacheService.changeGames(SessionCacheService.GLOBAL_GAME_ID, game.getIdHexString(), userSession);
         LOG.info("User " + userSession.getUsername() + " joined game: " + game.getIdHexString());
         GameResponse gameResponse = gameResponseFromGame(game);
         // Send a join game request to the user who joined the game.
@@ -138,11 +155,11 @@ public class LobbyController extends ChatController {
         if(gameIdLeaving != null) {     
             Game game = gameService.leaveGame(gameIdLeaving, userSession.getUsername());
             broadcastMessageToGame(gameIdLeaving, userMessage(userSession.getUsername(), "Left the Game", Colors.DARK_MAGENTA));
-            cacheService.changeGames(gameIdLeaving, SessionCacheService.GLOBAL_GAME_ID, userSession);
+            sessionCacheService.changeGames(gameIdLeaving, SessionCacheService.GLOBAL_GAME_ID, userSession);
             // Send an update to all other user's game info in the game.
             broadcastMessageToGame(gameIdLeaving, gameResponseFromGame(game), userSession.getUsername());
         } else {
-            cacheService.addToGamesCache(SessionCacheService.GLOBAL_GAME_ID, userSession);
+            sessionCacheService.addToGamesCache(SessionCacheService.GLOBAL_GAME_ID, userSession);
         }
         // Return the user to the lobby.
         broadcastMessageToUser(session, new LeaveGameResponse());
@@ -150,34 +167,19 @@ public class LobbyController extends ChatController {
         broadcastMessageToGame(SessionCacheService.GLOBAL_GAME_ID, userMessage(userSession.getUsername(), "Joined the Lobby", Colors.DARK_GREEN));
     }
 
-
-    ////////////////////////////////////////////////
-    // Utility Methods                           //
-    ///////////////////////////////////////////////
-
-    /**
-     * Gets game response from game and checks cache for disconnected users
-     * 
-     * @param game
-     * @return
-     */
-    private GameResponse gameResponseFromGame(Game game) {
-        GameResponse gameResponse = gameMapper.toGameResponse(game);
-        List <String> connectedUsers = cacheService.getConnectedUserSessionsFromGame(game.getIdHexString()).map(UserSession::getUsername).collect(Collectors.toList());
-        gameResponse.getUsers().forEach(user -> {
-            if(connectedUsers.contains(user.getUsername())) {
-                user.setConnected(true);
-            } else {
-                user.setConnected(false);
-            }
-        });
-        return gameResponse;
+    private void startGame(Session session, String gameId, UserSession userSession) {
+        try {
+            Game game = gameService.startGame(gameId, userSession.getUsername());
+        } catch (GameException e) {
+            broadcastMessageToGame(gameId, infoMessage(e.getMessageToClient(), Colors.RED));
+        }
+        broadcastMessageToGame(gameId, new StartGameResponse().gameId(gameId));
     }
 
 
-    ////////////////////////////////////////////////////////
-    // Methods for handling initial requests from login   //
-    ////////////////////////////////////////////////////////
+    //================================================================================
+    // Initial Request Logic methods
+    //================================================================================
 
 
     @Override
@@ -200,11 +202,37 @@ public class LobbyController extends ChatController {
                 return;
             }
         } else {
-            checkDatabaseForGame(session, request.getJwt().getName());
+            checkDatabaseForGame(session, request);
         }
     }
 
-    private void checkDatabaseForGame(Session session, String username) {
+
+
+    //================================================================================
+    // Utility Methods
+    //================================================================================
+
+    /**
+     * Gets game response from game and checks cache for disconnected users
+     * 
+     * @param game
+     * @return
+     */
+    private GameResponse gameResponseFromGame(Game game) {
+        GameResponse gameResponse = gameMapper.toGameResponse(game);
+        List <String> connectedUsers = sessionCacheService.getConnectedUserSessionsFromGame(game.getIdHexString()).map(UserSession::getUsername).collect(Collectors.toList());
+        gameResponse.getUsers().forEach(user -> {
+            if(connectedUsers.contains(user.getUsername())) {
+                user.setConnected(true);
+            } else {
+                user.setConnected(false);
+            }
+        });
+        return gameResponse;
+    }
+
+    private void checkDatabaseForGame(Session session, BaseRequest request) {
+        String username = request.getJwt().getName();
         List<Game> games = gameService.getGamesByUsername(username);
         if(games.size() > 1) {
             LOG.error("User " + username + " has more than one game in the database. Removing them from all games.");
@@ -218,5 +246,7 @@ public class LobbyController extends ChatController {
         // If the user is not in a game, send them to the lobby.
         joinLobby(session, null, 
             new UserSession().username(username).session(session));
+        // If we can't find the game need to modify the request so that we are pointing back to the lobby
+        request.gameId(SessionCacheService.GLOBAL_GAME_ID);
     }
 }

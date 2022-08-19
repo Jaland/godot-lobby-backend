@@ -4,7 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.landister.vampire.backend.model.auth.User;
+import org.landister.vampire.backend.model.dao.auth.AuthUser;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.util.PasswordService;
 
@@ -29,7 +29,7 @@ public class LoginService {
 	 * @return
 	 */
 	public String login(String username, String password) {
-		User user = User.findByUsername(username);
+		AuthUser user = AuthUser.findByUsername(username);
 		if(user == null) {
 			throw new IllegalArgumentException("User not found");
 		}
@@ -40,11 +40,11 @@ public class LoginService {
 	}
 
 	public void register(LoginRequest request) {
-		User user = User.findByUsername(request.getUsername());
+		AuthUser user = AuthUser.findByUsername(request.getUsername());
 		if(user != null) {
 			throw new IllegalArgumentException("User already exists");
 		}
-		user = new User();
+		user = new AuthUser();
 		user.setUsername(request.getUsername());
 		user.setToken(passwordService.encryptPassword(request.getPassword()));
 		user.persist();

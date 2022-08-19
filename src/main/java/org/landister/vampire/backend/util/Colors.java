@@ -31,5 +31,7 @@ public final class Colors {
   public static final String PINK = "#FF00FF";
   public static final String RED = "#FF0000";
   public static final String BURNT_ORANGE = "#C64600";
+  public static final String BANANA = "#FFCD8C";
+  public static final String PLUM = "#8E4585";
 
 }

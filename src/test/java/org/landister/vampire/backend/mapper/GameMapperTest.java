@@ -6,9 +6,10 @@ import javax.inject.Inject;
 
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
-import org.landister.vampire.backend.model.game.Game;
+import org.landister.vampire.backend.model.dao.game.Game;
 import org.landister.vampire.backend.model.response.GameResponse;
 
+import org.landister.vampire.backend.model.dao.game.inner.User;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -22,7 +23,7 @@ public class GameMapperTest {
     Game game = new Game();
     game.setId(new ObjectId());
     game.setName("test");
-    game.setUsers(Arrays.asList("User1", "User2", "User3"));
+    game.setUsers(Arrays.asList(new User("User1"), new User("User2"), new User("User3")));
     GameResponse response = mapper.toGameResponse(game);
     assert(response.getUsers().size() == 3);
     assert(response.getUsers().get(0).getUsername().equals("User1"));

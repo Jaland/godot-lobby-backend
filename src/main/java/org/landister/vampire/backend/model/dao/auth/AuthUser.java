@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.model.auth;
+package org.landister.vampire.backend.model.dao.auth;
 
 import java.util.Objects;
 
@@ -6,22 +6,22 @@ import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity(collection = "users", database = "vampire")
-public class User extends PanacheMongoEntity {
+public class AuthUser extends PanacheMongoEntity {
     
     private String username;
     private String token;
 
 
     // Data Retrieval Methods
-    public static User findByUsername(String username){
+    public static AuthUser findByUsername(String username){
         return find("username", username).firstResult();
     }
 
 
-    public User() {
+    public AuthUser() {
     }
 
-    public User(String username, String token) {
+    public AuthUser(String username, String token) {
         this.username = username;
         this.token = token;
     }
@@ -42,12 +42,12 @@ public class User extends PanacheMongoEntity {
         this.token = token;
     }
 
-    public User username(String username) {
+    public AuthUser username(String username) {
         setUsername(username);
         return this;
     }
 
-    public User token(String token) {
+    public AuthUser token(String token) {
         setToken(token);
         return this;
     }
@@ -56,10 +56,10 @@ public class User extends PanacheMongoEntity {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof User)) {
+        if (!(o instanceof AuthUser)) {
             return false;
         }
-        User user = (User) o;
+        AuthUser user = (AuthUser) o;
         return Objects.equals(username, user.username) && Objects.equals(token, user.token);
     }
 

@@ -16,6 +16,7 @@ import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.response.BaseResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.SessionCacheService;
+import org.landister.vampire.backend.util.exceptions.NotImplementedException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +30,7 @@ import io.smallrye.jwt.auth.principal.ParseException;
  */
 public class BaseController {
 
-    @Inject 
+    @Inject
     JWTParser parser;
 
     @Inject
@@ -43,6 +44,10 @@ public class BaseController {
     String jwtSecret;
 
     private static final Logger LOG = Logger.getLogger(BaseController.class);
+
+    //================================================================================
+    // WebSocket methods
+    //================================================================================
 
     public void onOpen(Session session) {
         LOG.info("Session " + session.getId() + " opened");
@@ -84,12 +89,10 @@ public class BaseController {
         return request;
     }
 
-    /**
-     * Method should be handled by subclasses
-     */
-    public void initialRequest(Session session, InitialRequest request) {
-        throw new RuntimeException("Initial request not implemented");
-    }
+
+    //================================================================================
+    // Broadcast Methods
+    //================================================================================
 
     /**
      * Broadcast a message to the owner of a specific session
@@ -97,6 +100,7 @@ public class BaseController {
      * @param response
      */
     protected void broadcastMessageToUser(Session session, BaseResponse response) {
+        LOG.debug("Broadcasting message to user: " + response);
         try {
             session.getAsyncRemote().sendText(mapper.writeValueAsString(response), result -> {
             if (result.getException() != null) {
@@ -104,9 +108,10 @@ public class BaseController {
             }
         });
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to parse message: " + response + "\n");
+            LOG.error("Unable to parse message: " + response + "\n" + e.getMessage());
         }
     }
+
 
     /**
      * Broadcast a message to all users in a game
@@ -117,6 +122,7 @@ public class BaseController {
      * @param username - if not included, broadcast to all users in game
      */
     protected void broadcastMessageToGame(String gameId, BaseResponse response, String... excludeUsernames) {
+        LOG.debug("Broadcasting message to game " + gameId + ": " + response);
         Map<String, UserSession> gameSession = sessionCacheService.getGameSessions(gameId);
         if(gameSession == null) {
             LOG.error("Broadcast Error: Game session not found for game: " + gameId);
@@ -135,8 +141,20 @@ public class BaseController {
                     }
                 });
             } catch (JsonProcessingException e) {
-                LOG.error("Unable to parse message: " + response + "\n");
+                LOG.error("Unable to parse message: " + response + "\n" + e.getMessage());
             }
         });
     }
+
+    //================================================================================
+    // Methods to Override
+    //================================================================================
+
+    /**
+     * Method should be handled by subclasses
+     */
+    public void initialRequest(Session session, InitialRequest request) throws NotImplementedException {
+        throw new NotImplementedException("Initial request not implemented, this should always be overwritten by subclasses");
+    }
+
 }

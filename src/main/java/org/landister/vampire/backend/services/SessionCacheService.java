@@ -1,7 +1,6 @@
 package org.landister.vampire.backend.services;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -10,16 +9,13 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.Session;
 
 import org.jboss.logging.Logger;
-import org.landister.vampire.backend.model.game.Game;
+import org.landister.vampire.backend.model.dao.game.Game;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.util.exceptions.NotFoundException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkus.security.AuthenticationFailedException;
 
 /**
  * This class is a service that caches the session of a user.
@@ -28,7 +24,7 @@ import io.quarkus.security.AuthenticationFailedException;
 public class SessionCacheService {
 
     @Inject
-    GameService gameService;
+    BaseGameService gameService;
 
     public static final String GLOBAL_GAME_ID = "0";
 
@@ -136,12 +132,12 @@ public class SessionCacheService {
         Map<String, UserSession> gameSessions = getGameSessions(gameId);
         if (gameSessions == null) {
             LOG.error("Game not found in cache: " + gameId);
-            throw new NotFoundException("Game not found");
+            return null;
         }
         UserSession userSession = gameSessions.get(username);
         if (userSession == null) {
             LOG.error("Session not found in game for user: " + username + " in game: " + gameId);
-            throw new NotFoundException("Session not found");
+            return null;
         }
         return userSession;
     }

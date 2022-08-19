@@ -41,7 +41,7 @@ public class LoginController extends BaseController{
     public void onError(Session session, Throwable throwable) {
         super.onError(session, throwable);
     }
-
+ 
     @OnMessage
     public void onMessage(Session session, String encodedMessage) throws IOException {
         try {

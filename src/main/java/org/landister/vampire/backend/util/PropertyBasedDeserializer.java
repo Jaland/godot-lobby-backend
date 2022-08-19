@@ -2,13 +2,9 @@ package org.landister.vampire.backend.util;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.landister.vampire.backend.model.request.ChatRequest;
 import org.landister.vampire.backend.model.request.BaseRequest;
-import org.landister.vampire.backend.model.request.auth.LoginRequest;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
