@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.bson.types.ObjectId;
 import org.landister.vampire.backend.model.dao.game.inner.User;
 import org.landister.vampire.backend.model.enums.GameState;
+import org.landister.vampire.backend.model.shared.Goal;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -27,15 +28,18 @@ public class Game extends PanacheMongoEntity{
 
   List<User> users = List.of();
 
+  Goal goal;
+
 
   public String getIdHexString(){
     return id.toHexString();
   }
 
+
   public Game() {
   }
 
-  public Game(ObjectId id, String name, GameState state, int minPlayers, int maxPlayers, String host, List<User> users) {
+  public Game(ObjectId id, String name, GameState state, int minPlayers, int maxPlayers, String host, List<User> users, Goal goal) {
     this.id = id;
     this.name = name;
     this.state = state;
@@ -43,6 +47,7 @@ public class Game extends PanacheMongoEntity{
     this.maxPlayers = maxPlayers;
     this.host = host;
     this.users = users;
+    this.goal = goal;
   }
 
   public ObjectId getId() {
@@ -101,6 +106,14 @@ public class Game extends PanacheMongoEntity{
     this.users = users;
   }
 
+  public Goal getGoal() {
+    return this.goal;
+  }
+
+  public void setGoal(Goal goal) {
+    this.goal = goal;
+  }
+
   public Game id(ObjectId id) {
     setId(id);
     return this;
@@ -136,6 +149,11 @@ public class Game extends PanacheMongoEntity{
     return this;
   }
 
+  public Game goal(Goal goal) {
+    setGoal(goal);
+    return this;
+  }
+
   @Override
     public boolean equals(Object o) {
         if (o == this)
@@ -144,12 +162,12 @@ public class Game extends PanacheMongoEntity{
             return false;
         }
         Game game = (Game) o;
-        return Objects.equals(id, game.id) && Objects.equals(name, game.name) && Objects.equals(state, game.state) && minPlayers == game.minPlayers && maxPlayers == game.maxPlayers && Objects.equals(host, game.host) && Objects.equals(users, game.users);
+        return Objects.equals(id, game.id) && Objects.equals(name, game.name) && Objects.equals(state, game.state) && minPlayers == game.minPlayers && maxPlayers == game.maxPlayers && Objects.equals(host, game.host) && Objects.equals(users, game.users) && Objects.equals(goal, game.goal);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, state, minPlayers, maxPlayers, host, users);
+    return Objects.hash(id, name, state, minPlayers, maxPlayers, host, users, goal);
   }
 
   @Override
@@ -162,9 +180,8 @@ public class Game extends PanacheMongoEntity{
       ", maxPlayers='" + getMaxPlayers() + "'" +
       ", host='" + getHost() + "'" +
       ", users='" + getUsers() + "'" +
+      ", goal='" + getGoal() + "'" +
       "}";
   }
-  
-
 
 }

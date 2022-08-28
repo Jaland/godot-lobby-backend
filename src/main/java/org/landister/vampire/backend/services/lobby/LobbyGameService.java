@@ -1,21 +1,18 @@
 package org.landister.vampire.backend.services.lobby;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import org.landister.vampire.backend.model.dao.game.Game;
-import org.landister.vampire.backend.model.enums.GameState;
 import org.landister.vampire.backend.model.dao.game.inner.User;
+import org.landister.vampire.backend.model.enums.GameState;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.services.GameService;
 import org.landister.vampire.backend.util.exceptions.GameException;
-import org.landister.vampire.backend.util.exceptions.NotFoundException;
 
 /**
  * Used for retrieving lobby specific information
@@ -29,7 +26,7 @@ public class LobbyGameService extends GameService {
   public Game createGame(UserSession user, CreateGameRequest request) {
 		Game game = new Game();
 		game.host(user.getUsername())
-      .users(List.of(new User(user.getUsername())))
+      .users(List.of(new User().name(user.getUsername())))
       .state(GameState.WAITING)
       .name(request.getName());
 		game.persist();
@@ -42,7 +39,7 @@ public class LobbyGameService extends GameService {
       LOG.info("User " + user.getUsername() + " is already in game " + gameId);
       return game;
     }
-		game.getUsers().add(new User(user.getUsername()));
+		game.getUsers().add(new User().name(user.getUsername()));
 		game.update();
 		return game;
 	}

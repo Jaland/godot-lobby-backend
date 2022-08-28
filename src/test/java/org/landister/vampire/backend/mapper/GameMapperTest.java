@@ -23,7 +23,7 @@ public class GameMapperTest {
     Game game = new Game();
     game.setId(new ObjectId());
     game.setName("test");
-    game.setUsers(Arrays.asList(new User("User1"), new User("User2"), new User("User3")));
+    game.setUsers(Arrays.asList(new User("User1", null), new User("User2", null), new User("User3", null)));
     GameResponse response = mapper.toGameResponse(game);
     assert(response.getUsers().size() == 3);
     assert(response.getUsers().get(0).getUsername().equals("User1"));

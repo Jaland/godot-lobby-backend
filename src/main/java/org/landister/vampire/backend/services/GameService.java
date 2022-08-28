@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
 import javax.inject.Inject;
 
 import org.bson.types.ObjectId;
@@ -14,8 +12,6 @@ import org.landister.vampire.backend.mapper.AuthUserMapper;
 import org.landister.vampire.backend.model.dao.game.Game;
 import org.landister.vampire.backend.model.dao.game.inner.User;
 import org.landister.vampire.backend.util.exceptions.NotFoundException;
-
-import io.quarkus.arc.DefaultBean;
 
 /**
  * Basic Service used for interacting with Saved Game Information in the Database
@@ -46,7 +42,7 @@ public class GameService {
   public Game leaveGame(String gameId, String username) {
     // Remove the user from the game cache
     try {
-      cacheService.removeFromGamesCache(gameId, username);
+      cacheService.removeFromGamesCache(gameId, username, false);
     } catch (NotFoundException e) {
       LOG.info("User not found in cache when removing from game for, gameId=" + gameId + ", userName=" + username);
     }

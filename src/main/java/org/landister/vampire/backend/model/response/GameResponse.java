@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.landister.vampire.backend.model.enums.GameState;
+import org.landister.vampire.backend.model.shared.Goal;
 
 public class GameResponse extends BaseResponse {
 
@@ -14,18 +15,22 @@ public class GameResponse extends BaseResponse {
   GameState state;
   List<UserResponse> users;
   String host;
+  Goal goal;
   
 
 
   public GameResponse() {
+    type = RESPONSE_TYPE;
   }
 
-  public GameResponse(String id, String name, GameState state, List<UserResponse> users, String host) {
+
+  public GameResponse(String id, String name, GameState state, List<UserResponse> users, String host, Goal goal) {
     this.id = id;
     this.name = name;
     this.state = state;
     this.users = users;
     this.host = host;
+    this.goal = goal;
   }
 
   public String getId() {
@@ -68,6 +73,14 @@ public class GameResponse extends BaseResponse {
     this.host = host;
   }
 
+  public Goal getGoal() {
+    return this.goal;
+  }
+
+  public void setGoal(Goal goal) {
+    this.goal = goal;
+  }
+
   public GameResponse id(String id) {
     setId(id);
     return this;
@@ -93,6 +106,11 @@ public class GameResponse extends BaseResponse {
     return this;
   }
 
+  public GameResponse goal(Goal goal) {
+    setGoal(goal);
+    return this;
+  }
+
   @Override
     public boolean equals(Object o) {
         if (o == this)
@@ -101,12 +119,12 @@ public class GameResponse extends BaseResponse {
             return false;
         }
         GameResponse gameResponse = (GameResponse) o;
-        return Objects.equals(id, gameResponse.id) && Objects.equals(name, gameResponse.name) && Objects.equals(state, gameResponse.state) && Objects.equals(users, gameResponse.users) && Objects.equals(host, gameResponse.host);
+        return Objects.equals(id, gameResponse.id) && Objects.equals(name, gameResponse.name) && Objects.equals(state, gameResponse.state) && Objects.equals(users, gameResponse.users) && Objects.equals(host, gameResponse.host) && Objects.equals(goal, gameResponse.goal);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, state, users, host);
+    return Objects.hash(id, name, state, users, host, goal);
   }
 
   @Override
@@ -117,6 +135,7 @@ public class GameResponse extends BaseResponse {
       ", state='" + getState() + "'" +
       ", users='" + getUsers() + "'" +
       ", host='" + getHost() + "'" +
+      ", goal='" + getGoal() + "'" +
       "}";
   }
 

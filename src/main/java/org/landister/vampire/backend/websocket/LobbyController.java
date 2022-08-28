@@ -79,7 +79,18 @@ public class LobbyController extends ChatController {
     public void onMessage(Session session, String message) {
         LOG.debug("Processing: " + message);
         BaseRequest request = super.onMessageBase(session, message);
+        if(request == null) {
+            // Issue processing request
+            return;
+        }
         UserSession userSession = sessionCacheService.getUserSessionFromUsername(request.getGameId(), request.getJwt().getName());
+        if(userSession == null) {
+            //Probably want to remove this for production release, but useful for debugging
+            broadcastMessageToUser(session, 
+                infoMessage("Issue finding cached user session when resolving message below, please reconnect to the game \n"
+                     + message, Colors.RED));
+            return;
+        }
         onMessageChat(request, userSession, session);
         switch (request.getRequestType()) {
             case LOBBY_REFRESH:

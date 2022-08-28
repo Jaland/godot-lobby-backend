@@ -5,6 +5,7 @@ import java.util.Base64;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -58,7 +59,7 @@ public class LoginController extends BaseController{
             
         } catch (Exception e) {
             LOG.error("Invalid Message passed to login", e);
-            session.close();
+            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Invalid Message passed to login"));
         }
     }
 

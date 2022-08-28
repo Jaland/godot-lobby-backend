@@ -93,21 +93,6 @@ public class ChatController extends BaseController {
         return new ChatResponse(response);
     }
 
-    /**
-     * Returns a formatted ChatResponse with the message, used when not related to a specific user
-     * @param user
-     * @param message
-     * @param color
-     * @return
-     */
-    protected ChatResponse infoMessage(String message, String... color) {
-        String response = message;
-        if(color != null && color.length > 0) {
-            response = "[color=" + color[0] + "]" + response + "[/color]";
-        }
-        return new ChatResponse(response);
-    }
-
 
 
 }

@@ -2,7 +2,10 @@ package org.landister.vampire.backend.model.response;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 // Note make sure that all constructors have the type="type" in them
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BaseResponse {
 
   protected String type;

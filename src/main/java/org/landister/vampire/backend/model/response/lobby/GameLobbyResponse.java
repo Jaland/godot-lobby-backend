@@ -15,11 +15,6 @@ public class GameLobbyResponse extends BaseResponse {
     type = RESPONSE_TYPE;
   }
 
-
-  public GameLobbyResponse(GameResponse game) {
-    this.game = game;
-  }
-
   public GameResponse getGame() {
     return this.game;
   }

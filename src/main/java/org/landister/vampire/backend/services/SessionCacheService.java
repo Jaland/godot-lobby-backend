@@ -89,7 +89,27 @@ public class SessionCacheService {
         return removeFromGamesCache(GLOBAL_GAME_ID, username);
     }
 
+
+    /**
+     * Removes user from the session cache of a specific game. (Do not close session)
+     * 
+     * @param gameId
+     * @param username
+     * @return
+     */
     public UserSession removeFromGamesCache(String gameId, String username) {
+        return removeFromGamesCache(gameId, username, false);
+    }
+
+
+    /**
+     * Removes user from the session cache of a specific game.
+     * 
+     * @param gameId
+     * @param username
+     * @return
+     */
+    public UserSession removeFromGamesCache(String gameId, String username, boolean closeSession) {
         LOG.debug("Removing user from session cache, gameId=" + gameId + ", username=" + username);
         Map<String, UserSession> gameSession = getGameSessions(gameId);
         if(gameSession==null){
@@ -99,6 +119,13 @@ public class SessionCacheService {
         UserSession userSession = gameSession.remove(username);
         if(userSession != null) {
             sessionToUserSessionMap.remove(userSession.getSession().getId());
+            if(closeSession){
+                try {
+                    userSession.getSession().close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "User being removed from cache"));
+                } catch (IOException e) {
+                    LOG.error("Error closing session", e);
+                }
+            }
         } else {
             LOG.info("User not found in session cache, gameId=" + gameId + ", username=" + username);
         }
@@ -115,7 +142,7 @@ public class SessionCacheService {
         LOG.debug("Removing user from all games: " + username);
         UserSession userSession = null;
         for (String gameId : gameToSessionsMap.keySet()) {
-            UserSession userSessionFromGame = removeFromGamesCache(gameId, username);
+            UserSession userSessionFromGame = removeFromGamesCache(gameId, username, true);
             userSession = userSessionFromGame != null ? userSessionFromGame : userSession;
         }
         return userSession;

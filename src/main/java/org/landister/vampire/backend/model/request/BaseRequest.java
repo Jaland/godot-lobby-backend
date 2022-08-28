@@ -6,6 +6,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
 import org.landister.vampire.backend.model.request.ingame.LoadAssetsRequest;
+import org.landister.vampire.backend.model.request.ingame.PlayerUpdateRequest;
+import org.landister.vampire.backend.model.request.ingame.RestartGameRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinLobbyRequest;
@@ -18,6 +20,15 @@ import org.landister.vampire.backend.util.PropertyBasedDeserializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+/**
+ * Base class for all requests.
+ * 
+ * Important: Make sure to override the @JsonDeserialize annotation with @JsonDeserialize( using = JsonDeserializer.None.class )
+ * Otherwise you will end up in an infinite recursion situation.
+ * 
+ * @author Landister
+
+ */
 @JsonDeserialize( using = PropertyBasedDeserializer.class )
 public class BaseRequest {
 
@@ -31,7 +42,9 @@ public class BaseRequest {
     JOIN_GAME(JoinGameRequest.class),
     LEAVE_GAME(LeaveGameRequest.class), 
     START_GAME(StartGameRequest.class),
+    RESTART_GAME(RestartGameRequest.class),
     LOAD_ASSETS(LoadAssetsRequest.class),
+    PLAYER_UPDATE(PlayerUpdateRequest.class),
     ;
 
   Class<? extends BaseRequest> requestClass;
