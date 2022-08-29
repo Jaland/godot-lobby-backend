@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.model.request.lobby;
+package org.landister.vampire.backend.model.request.ingame;
 
 import org.landister.vampire.backend.model.request.BaseRequest;
 
@@ -8,6 +8,4 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize( using = JsonDeserializer.None.class )
 public class StartGameRequest extends BaseRequest {
 
-  public StartGameRequest() {
-  }
- }
+}

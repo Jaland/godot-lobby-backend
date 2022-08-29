@@ -14,16 +14,19 @@ public class MapSetupResponse extends BaseResponse {
 
   private Map<String, Player> players = new HashMap<String, Player>();
 
+  private String host;
+
   private Goal goal;
 
 
   public MapSetupResponse() {
     type = RESPONSE_TYPE;
   }
+  
 
-
-  public MapSetupResponse(Map<String,Player> players, Goal goal) {
+  public MapSetupResponse(Map<String,Player> players, String host, Goal goal) {
     this.players = players;
+    this.host = host;
     this.goal = goal;
   }
 
@@ -33,6 +36,14 @@ public class MapSetupResponse extends BaseResponse {
 
   public void setPlayers(Map<String,Player> players) {
     this.players = players;
+  }
+
+  public String getHost() {
+    return this.host;
+  }
+
+  public void setHost(String host) {
+    this.host = host;
   }
 
   public Goal getGoal() {
@@ -45,6 +56,11 @@ public class MapSetupResponse extends BaseResponse {
 
   public MapSetupResponse players(Map<String,Player> players) {
     setPlayers(players);
+    return this;
+  }
+
+  public MapSetupResponse host(String host) {
+    setHost(host);
     return this;
   }
 
@@ -61,20 +77,22 @@ public class MapSetupResponse extends BaseResponse {
             return false;
         }
         MapSetupResponse mapSetupResponse = (MapSetupResponse) o;
-        return Objects.equals(players, mapSetupResponse.players) && Objects.equals(goal, mapSetupResponse.goal);
+        return Objects.equals(players, mapSetupResponse.players) && Objects.equals(host, mapSetupResponse.host) && Objects.equals(goal, mapSetupResponse.goal);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(players, goal);
+    return Objects.hash(players, host, goal);
   }
 
   @Override
   public String toString() {
     return "{" +
       " players='" + getPlayers() + "'" +
+      ", host='" + getHost() + "'" +
       ", goal='" + getGoal() + "'" +
       "}";
   }
+
 
 }

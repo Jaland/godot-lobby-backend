@@ -21,7 +21,7 @@ import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.response.GameResponse;
-import org.landister.vampire.backend.model.response.StartGameResponse;
+import org.landister.vampire.backend.model.response.ingame.StartGameResponse;
 import org.landister.vampire.backend.model.response.lobby.GameLobbyResponse;
 import org.landister.vampire.backend.model.response.lobby.GetAllGamesResponse;
 import org.landister.vampire.backend.model.response.lobby.LeaveGameResponse;
@@ -184,7 +184,7 @@ public class LobbyController extends ChatController {
         } catch (GameException e) {
             broadcastMessageToGame(gameId, infoMessage(e.getMessageToClient(), Colors.RED));
         }
-        broadcastMessageToGame(gameId, new StartGameResponse().gameId(gameId));
+        broadcastMessageToGame(gameId, new StartGameResponse());
     }
 
 

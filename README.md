@@ -50,3 +50,30 @@ If you want to learn more about building native executables, please consult http
 ## Related Guides
 
 - WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
+
+## Game States
+
+```mermaid
+sequenceDiagram
+  participant UClient as Host Godot Client
+  participant GClient as All Game User's Godot Client
+  participant Controller as Quarkus Server
+  participant Database as Database
+
+
+  note right of UClient: Host Starts Game from Lobby
+
+  UClient->>+Controller: Send: { requestType: INITIAL_REQUEST }
+    Database-->>Controller: Retrieve Game Info
+    Controller->>-UClient: Send: { type: load_assets }
+
+  
+  UClient->>+Controller: Send: { requestType: LOAD_ASSETS }
+    Database-->>Controller: Retrieve Game Info
+    Controller-->>Database: Update Game Info
+    Controller->>-GClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
+  
+  
+  GClient->>GClient: Update scene
+  
+```

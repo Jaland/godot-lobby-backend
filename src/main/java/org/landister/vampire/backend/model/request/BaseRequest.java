@@ -5,15 +5,16 @@ import java.util.Objects;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.landister.vampire.backend.model.request.auth.InitialRequest;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
+import org.landister.vampire.backend.model.request.ingame.GoalTouchedRequest;
 import org.landister.vampire.backend.model.request.ingame.LoadAssetsRequest;
 import org.landister.vampire.backend.model.request.ingame.PlayerUpdateRequest;
 import org.landister.vampire.backend.model.request.ingame.RestartGameRequest;
+import org.landister.vampire.backend.model.request.ingame.StartGameRequest;
 import org.landister.vampire.backend.model.request.lobby.CreateGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinGameRequest;
 import org.landister.vampire.backend.model.request.lobby.JoinLobbyRequest;
 import org.landister.vampire.backend.model.request.lobby.LeaveGameRequest;
 import org.landister.vampire.backend.model.request.lobby.LobbyRefreshRequest;
-import org.landister.vampire.backend.model.request.lobby.StartGameRequest;
 import org.landister.vampire.backend.services.SessionCacheService;
 import org.landister.vampire.backend.util.PropertyBasedDeserializer;
 
@@ -45,6 +46,7 @@ public class BaseRequest {
     RESTART_GAME(RestartGameRequest.class),
     LOAD_ASSETS(LoadAssetsRequest.class),
     PLAYER_UPDATE(PlayerUpdateRequest.class),
+    GOAL_TOUCHED(GoalTouchedRequest.class),
     ;
 
   Class<? extends BaseRequest> requestClass;

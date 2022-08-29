@@ -23,6 +23,7 @@ public final class Colors {
   public static final String LIGHT_CYAN = "#E0FFFF";
   public static final String LIGHT_GRAY = "#D3D3D3";
   public static final String LIGHT_GREEN = "#90EE90";
+  public static final String LIME = "#00FF00";
   public static final String LIGHT_MAGENTA = "#FF00FF";
   public static final String LIGHT_RED = "#FFA07A";
   public static final String LIGHT_YELLOW = "#FFFFE0";

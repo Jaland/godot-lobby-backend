@@ -13,10 +13,10 @@ public enum GameState {
   ;
 
   // Using these as more common states we care about to avoid having to check for each one every time
-  boolean inLobby = false;
-  boolean isLoading = false;
-  boolean isCurrentlyPlaying = false;
-  boolean isCompleted = false;
+  public boolean inLobby = false;
+  public boolean isLoading = false;
+  public boolean isCurrentlyPlaying = false;
+  public boolean isCompleted = false;
 
   private GameState(Boolean inLobby, Boolean isLoading, Boolean isCurrentlyPlaying, boolean isCompleted) {
     this.inLobby = inLobby;

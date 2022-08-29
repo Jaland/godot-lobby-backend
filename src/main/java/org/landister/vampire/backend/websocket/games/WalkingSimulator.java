@@ -21,11 +21,15 @@ import org.landister.vampire.backend.model.dao.game.Game;
 import org.landister.vampire.backend.model.enums.GameState;
 import org.landister.vampire.backend.model.request.BaseRequest;
 import org.landister.vampire.backend.model.request.auth.InitialRequest;
+import org.landister.vampire.backend.model.request.ingame.GoalTouchedRequest;
 import org.landister.vampire.backend.model.request.ingame.LoadAssetsRequest;
 import org.landister.vampire.backend.model.request.ingame.PlayerUpdateRequest;
 import org.landister.vampire.backend.model.request.ingame.RestartGameRequest;
+import org.landister.vampire.backend.model.request.ingame.StartGameRequest;
+import org.landister.vampire.backend.model.response.ingame.GameOverResponse;
 import org.landister.vampire.backend.model.response.ingame.MapSetupResponse;
 import org.landister.vampire.backend.model.response.ingame.PlayerUpdateResponse;
+import org.landister.vampire.backend.model.response.ingame.StartingGameResponse;
 import org.landister.vampire.backend.model.session.UserSession;
 import org.landister.vampire.backend.model.shared.Player;
 import org.landister.vampire.backend.services.InGameService;
@@ -113,15 +117,23 @@ public class WalkingSimulator extends ChatController {
             case PLAYER_UPDATE:
                 updatePlayerInfo(session, (PlayerUpdateRequest)request, userSession);
                 break;
+            case START_GAME:
+                startGame(session, (StartGameRequest)request, userSession);
+                break;
+            case RESTART_GAME:
+                restartGame(session, (RestartGameRequest)request, userSession);
+                break;
+            case GOAL_TOUCHED:
+                goalTouched(session, (GoalTouchedRequest)request, userSession);
+                break;
             default:
                 break;
         }
     }
 
     //================================================================================
-    // Initial Load Request
+    // Process Request methods
     //================================================================================
-
 
     /**
      * Sends player update information
@@ -148,6 +160,13 @@ public class WalkingSimulator extends ChatController {
     private void loadAssets(Session session, LoadAssetsRequest request, UserSession userSession) {
         LOG.debug("Loading assets for: " + request);
         Game game = gameService.getGame(request.getGameId());
+
+        // Only allow host to load assets
+        if (!userSession.getUsername().equals(game.getHost())) {
+            broadcastMessageToUser(session, infoMessage("Only the host can load assets", Colors.LIGHT_YELLOW));
+            return;
+        }
+
         game.getUsers().forEach(u -> {
             if (request.getPlayers().containsKey(u.getName())) {
                 u.setSpawnPosition(request.getPlayers().get(u.getName()).getPosition());
@@ -156,13 +175,58 @@ public class WalkingSimulator extends ChatController {
         game.setGoal(request.getGoal());
         game.setState(GameState.LOADED);
         game.update();
-        if (!userSession.getUsername().equals(game.getHost())) {
-            throw new GameException("Only the host can load assets");
+        // Pass back the loaded asset info and the host information
+        MapSetupResponse response = loadAssetsMapper.toStartGame(request);
+        response.host(game.getHost());
+        broadcastMessageToGame(request.getGameId(), response);
+    }
+
+    private void goalTouched(Session session, GoalTouchedRequest request, UserSession userSession) {
+        Game game = gameService.getGame(request.getGameId());
+        if(game.getState().isCompleted) {
+            LOG.debug("Game already completed, ignoring goal touched request");
+            return;
         }
-        // Not going to bother holding on to player data but will load map data here in the future
-        broadcastMessageToGame(request.getGameId(), loadAssetsMapper.toStartGame(request));
+        if(!game.getState().isCurrentlyPlaying) {
+            LOG.error("Goal touched while game in state: " + game.getState());
+            broadcastMessageToGame(request.getGameId(), infoMessage("Someone touched the goal before the game has started", Colors.RED));
+            return;
+        }
+        game.setState(GameState.FINISHED);
+        game.update();
+        broadcastMessageToGame(request.getGameId(), new GameOverResponse().winner(request.getWinner()));
 
     }
+
+
+    private void restartGame(Session session, RestartGameRequest request, UserSession userSession) {
+        Game game = gameService.getGame(request.getGameId());
+        if(!gameService.isHost(game, userSession.getUsername())) {
+            broadcastMessageToUser(session, infoMessage("Only host can restart a game", Colors.RED));
+        }
+        gameService.resetGame(game);
+        restartGame(game, userSession);
+    }
+
+
+
+    private void startGame(Session session, StartGameRequest request, UserSession userSession) {
+        Game game = gameService.getGame(request.getGameId());
+        // Only allow host to start games
+        if (!userSession.getUsername().equals(game.getHost())) {
+            broadcastMessageToUser(session, infoMessage("Only the host can start game", Colors.LIGHT_YELLOW));
+            return;
+        }
+
+        game = gameService.startGame(game);
+
+
+        // Broadcast to all players that the game has started
+        broadcastMessageToGame(request.getGameId(), infoMessage("Game starting!", Colors.LIME));
+        broadcastMessageToGame(request.getGameId(), new StartingGameResponse());
+        
+    }
+
 
     /**
      * Removes the user from the game
@@ -191,7 +255,6 @@ public class WalkingSimulator extends ChatController {
         Game game = games.get(0);
         UserSession userSession = new UserSession().gameId(request.getGameId()).username(request.getJwt().getName()).session(session);
         sessionCacheService.addToGamesCache(request.getGameId(), userSession);
-
         restartGame(game, userSession);
     }
 
@@ -202,17 +265,25 @@ public class WalkingSimulator extends ChatController {
      * @param userSession
      * @param restarting
      */  
-    private void restartGame(Game game, UserSession userSession, boolean... restarting) {
+    private void restartGame(Game game, UserSession userSession) {
         Session session = userSession.getSession();
+        // If we are in a loading state and the request is from the host, then tell the host to load assets (i.e. Create spawn points for everything)
         if(game.getState() == GameState.LOADING && gameService.isHost(game, userSession.getUsername())) {
             broadcastMessageToUser(session, gameMapper.toLoadAssetsResponse(game));
-        } else {
+        }
+        // If we are in a loading state and the request is not from the host ignore it
+        else if(game.getState() == GameState.LOADING){ 
+            return;        
+        }
+        // If we are in any other state just send back the map information
+        else {
             MapSetupResponse response = new MapSetupResponse();
             game.getUsers().forEach(u -> {
                 response.getPlayers().put(u.getName(), new Player().position(u.getSpawnPosition()));
             });
-            response.setGoal(game.getGoal());
-            broadcastMessageToUser(session, response);
+            response.host(game.getHost()).setGoal(game.getGoal());
+            if(game.getState().isLoading)
+                broadcastMessageToUser(session, response);
         }
     }
     
