@@ -6,15 +6,13 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.landister.vampire.backend.model.dao.auth.AuthUser;
 import org.landister.vampire.backend.model.request.auth.LoginRequest;
-import org.landister.vampire.backend.util.PasswordService;
+import org.landister.vampire.backend.util.exceptions.AuthException;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import io.smallrye.jwt.build.Jwt;
 
 @ApplicationScoped
 public class LoginService {
-
-	@Inject
-	PasswordService passwordService;
 
 	@ConfigProperty(name = "jwt.secret")
 	String jwtSecret;
@@ -31,10 +29,10 @@ public class LoginService {
 	public String login(String username, String password) {
 		AuthUser user = AuthUser.findByUsername(username);
 		if(user == null) {
-			throw new IllegalArgumentException("User not found");
+			throw new AuthException("User not found");
 		}
-		if(!passwordService.checkPassword(password, user.getToken())){
-			throw new IllegalArgumentException("Invalid password");
+		if(!BcryptUtil.matches(password, user.getToken())){
+			throw new AuthException("Invalid password");
 		}
 		return Jwt.upn(username).expiresIn(jwtExpirationTime).signWithSecret(jwtSecret) ;
 	}
@@ -42,11 +40,11 @@ public class LoginService {
 	public void register(LoginRequest request) {
 		AuthUser user = AuthUser.findByUsername(request.getUsername());
 		if(user != null) {
-			throw new IllegalArgumentException("User already exists");
+			throw new AuthException("User already exists");
 		}
 		user = new AuthUser();
 		user.setUsername(request.getUsername());
-		user.setToken(passwordService.encryptPassword(request.getPassword()));
+		user.setToken(BcryptUtil.bcryptHash(request.getPassword()));
 		user.persist();
 	}
 

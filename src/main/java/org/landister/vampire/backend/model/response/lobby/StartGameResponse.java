@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.model.response.ingame;
+package org.landister.vampire.backend.model.response.lobby;
 
 import org.landister.vampire.backend.model.response.GameResponse;
 

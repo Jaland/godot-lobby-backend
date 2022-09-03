@@ -1,8 +1,33 @@
-# websockets-quickstart Project
+# Backend Lobby Server
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This project is an example/POC for the backend Lobby Service of a Godot application. The matching frontend service can be found [here]()
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+## File Structure
+
+```tree
+📦src
+ ┣ 📂main
+ ┃ ┣ 📂java.org.landister.vampire.📂backend
+ ┃ ┃ ┣ 📂mapper (1)
+ ┃ ┃ ┣ 📂model
+ ┃ ┃ ┃ ┣ 📂dao
+ ┃ ┃ ┃ ┣ 📂enums
+ ┃ ┃ ┃ ┣ 📂request
+ ┃ ┃ ┃ ┣ 📂response
+ ┃ ┃ ┃ ┣ 📂session
+ ┃ ┃ ┃ ┗ 📂shared
+ ┃ ┃ ┣ 📂services
+ ┃ ┃ ┣ 📂util
+ ┃ ┃ ┗ 📂websocket
+ ┃ ┃ ┃ ┣ 📂games
+ ┃ ┃ ┃ ┃ ┗ 📜WalkingSimulator.java
+ ┃ ┃ ┃ ┣ 📜BaseController.java
+ ┃ ┃ ┃ ┣ 📜ChatController.java
+ ┃ ┃ ┃ ┣ 📜LobbyController.java
+ ┃ ┃ ┃ ┗ 📜LoginController.java
+ ┃ ┗ 📂resources
+ ┃ ┃ ┗ 📜application.properties
+ ```
 
 ## Running the application in dev mode
 

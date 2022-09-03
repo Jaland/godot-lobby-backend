@@ -59,7 +59,7 @@ public class LoginController extends BaseController{
             
         } catch (Exception e) {
             LOG.error("Invalid Message passed to login", e);
-            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Invalid Message passed to login"));
+            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "Invalid login"));
         }
     }
 
