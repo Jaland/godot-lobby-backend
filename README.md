@@ -7,27 +7,48 @@ This project is an example/POC for the backend Lobby Service of a Godot applicat
 ```tree
 📦src
  ┣ 📂main
- ┃ ┣ 📂java.org.landister.vampire.📂backend
- ┃ ┃ ┣ 📂mapper (1)
- ┃ ┃ ┣ 📂model
- ┃ ┃ ┃ ┣ 📂dao
- ┃ ┃ ┃ ┣ 📂enums
- ┃ ┃ ┃ ┣ 📂request
- ┃ ┃ ┃ ┣ 📂response
- ┃ ┃ ┃ ┣ 📂session
- ┃ ┃ ┃ ┗ 📂shared
+ ┃ ┣ 📂java.org.landister.lobby.backend
+ ┃ ┃ ┣ 📂mapper ➊
+ ┃ ┃ ┣ 📂model❷
+ ┃ ┃ ┃ ┣ 📂dao Ⓐ
+ ┃ ┃ ┃ ┣ 📂enums Ⓑ
+ ┃ ┃ ┃ ┣ 📂request Ⓒ
+ ┃ ┃ ┃ ┣ 📂response Ⓒ
+ ┃ ┃ ┃ ┣ 📂session Ⓓ
+ ┃ ┃ ┃ ┗ 📂shared Ⓔ
  ┃ ┃ ┣ 📂services
  ┃ ┃ ┣ 📂util
- ┃ ┃ ┗ 📂websocket
+ ┃ ┃ ┗ 📂websocket❸
  ┃ ┃ ┃ ┣ 📂games
- ┃ ┃ ┃ ┃ ┗ 📜WalkingSimulator.java
- ┃ ┃ ┃ ┣ 📜BaseController.java
- ┃ ┃ ┃ ┣ 📜ChatController.java
- ┃ ┃ ┃ ┣ 📜LobbyController.java
- ┃ ┃ ┃ ┗ 📜LoginController.java
+ ┃ ┃ ┃ ┃ ┗ 📜WalkingSimulator.java Ⓔ
+ ┃ ┃ ┃ ┣ 📜BaseController.java Ⓐ
+ ┃ ┃ ┃ ┣ 📜ChatController.java Ⓑ
+ ┃ ┃ ┃ ┣ 📜LobbyController.java Ⓒ
+ ┃ ┃ ┃ ┗ 📜LoginController.java Ⓓ
  ┃ ┗ 📂resources
  ┃ ┃ ┗ 📜application.properties
+ ┣ 📜LICENSE
+ ┣ 📜Makefile ❹
+ ┣ 📜README.md
+ ┣ 📜pom.xml
  ```
+
+<sub>
+1. **mappers:** A set of Mappers used to translate to/from a DTO(Data Transfer Object) to a Request or Response
+2. **model:** POJOs representing different pieces of the application
+    - A. Database Objects
+    - B. Shared Enums used across our model
+    - C. **request**: Client to Server request/ **response**: Server to Client responses
+    - D. Used to save user information for in-memory cache
+    - E. Inner objects shared across our model
+3. **websocket:** WebSocket Connection Controllers
+    - A. **BaseController:** Controller that is extended by all the other Websocket Controllers (except login). This is where our common logic lives
+    - B. **ChatController:** Extended by controllers that use the chat functionality. Contains logic for sending messages to specific users and all users in a game
+    - C. **LobbyController:** Controller backing the initial login screen
+    - D. **LoginController:** Controller backing the main lobby, and game lobby screen
+    - E. **WalkingSimulator:** Controller backing our example game
+4. **MakeFile** File used to easily run our different commands
+</sub>
 
 ## Running the application in dev mode
 
@@ -38,39 +59,37 @@ You can run your application in dev mode that enables live coding using:
 
 > **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
-## Packaging and running the application
+## Running Application On DigitalOcean
 
-The application can be packaged using:
-```shell script
-./mvnw package
-```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+There are lots of ways to deploy your application on the interwebs. I have used Google Cloud and you should be able to get that working for free, and I think that AWS has some free options. But I have recently started playing around with [Digital Ocean](cloud.digitalocean.com) and I have really like the interface and simplicity of it. The pricing is also very reasonable and if you are just creating a couple dropplets for your initial POC it is easy to turn them off and on so I am going to write the guide below assuming that you are using the DigitalOcean products and are new.
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+### Create Container Repository
 
-If you want to build an _über-jar_, execute the following command:
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
-```
+DigitalOcean offers a way to create a container repository. The free level lets you create a single repo, should be able to follow the direction to get authenticated.
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+>**Note:** I chose to stick with the normal `docker` tool rather than their provided `doctl` cli.
 
-## Creating a native executable
+### Build Image And Push
 
-You can create a native executable using: 
-```shell script
-./mvnw package -Pnative
+Now that we are connected to our Image Registry we just need to build our image and push. Quarkus creates a couple different docker files for us, we are going to use the `src/main/docker/Dockerfile.jvm` file for our build. The `native` file is only intended for serverless use which we do not want for our application.
+
+Run the Docker Commands:
+
+```sh
+docker build -f src/main/docker/Dockerfile.jvm . -t registry.digitalocean.com/<YOUR_REPO_NAME>/lobby-example
+docker push registry.digitalocean.com/<YOUR_REPO_NAME>/lobby-example
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
+```sh
+make build-docker-image:
 ```
 
-You can then execute your native executable with: `./target/websockets-quickstart-1.0.0-SNAPSHOT-runner`
+### Create a Dropplet
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+Navigate to Dropplets on the side and choose "Create Dropplet"
+
+
+
 
 ## Related Guides
 

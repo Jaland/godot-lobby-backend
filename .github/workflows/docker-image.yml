@@ -15,6 +15,9 @@ on:
       - 'server.py'
       - 'Dockerfile'
       - '.github/workflows/**'
+  
+env:
+  IMAGE_NAME: lobby-example
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
@@ -37,14 +40,14 @@ jobs:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     
     # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
-    - name: Build container image
-      run: docker build -t ${{ secrets.REGISTRY_NAME }}/python-example:$(echo $GITHUB_SHA | head -c7) .
+    - name: Build JVM container image
+      run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7) -f src/main/docker/Dockerfile.jvm .
 
     - name: Log in to DigitalOcean Container Registry with short-lived credentials
       run: doctl registry login --expiry-seconds 1200
 
     - name: Push image to DigitalOcean Container Registry
-      run: docker push ${{ secrets.REGISTRY_NAME }}/python-example:$(echo $GITHUB_SHA | head -c7)
+      run: docker push ${{ secrets.REGISTRY_NAME }}/${{ IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
 
     # Deploy to DigitalOCcean Kubernetes.
     - name: Update deployment file

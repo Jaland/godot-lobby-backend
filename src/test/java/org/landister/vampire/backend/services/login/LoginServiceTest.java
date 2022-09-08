@@ -1,4 +1,4 @@
-package org.landister.vampire.backend.services.login;
+package org.landister.lobby.backend.services.login;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
