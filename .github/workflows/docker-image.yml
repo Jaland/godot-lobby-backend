@@ -74,4 +74,5 @@ jobs:
 
     # Note we want to do this after we push the image so we don't have to redownload base layers of our image
     - name: Repository Garbage Collection
+      continue-on-error: true
       run: doctl registry garbage-collection start -f
