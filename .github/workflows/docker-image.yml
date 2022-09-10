@@ -33,6 +33,10 @@ jobs:
     - name: Checkout master
       uses: actions/checkout@main
 
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
+    - name: Build Application
+      run: mvn clean install
+
     # Install doctl.
     - name: Install doctl
       uses: digitalocean/action-doctl@v2
