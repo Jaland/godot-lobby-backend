@@ -71,10 +71,17 @@ DigitalOcean offers a way to create a container repository. The free level lets 
 
 ### Build Image And Push
 
-This repository includes a `.github/workflows` folder that will create a github workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menue
+This repository includes a `.github/workflows` folder that will create a github workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menu
 
 TBD Create guide for adding secrets
 
+#### Required Secrets:
+
+| Name                      | Value                                                                                                       | Example                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------- |
+| DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`                                           |                             |
+| REGISTRY_BASE_URL         | Base url retrieved from the `Container` page. Should probably be `registry.digitalocean.com`                | `registry.digitalocean.com` |
+| REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` | `myrepo`                    |
 
 ### Build Image Locally
 
