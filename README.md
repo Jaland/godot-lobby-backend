@@ -71,9 +71,16 @@ DigitalOcean offers a way to create a container repository. The free level lets 
 
 ### Build Image And Push
 
+This repository includes a `.github/workflows` folder that will create a github workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menue
+
+TBD Create guide for adding secrets
+
+
+### Build Image Locally
+
 Now that we are connected to our Image Registry we just need to build our image and push. Quarkus creates a couple different docker files for us, we are going to use the `src/main/docker/Dockerfile.jvm` file for our build. The `native` file is only intended for serverless use which we do not want for our application.
 
-Run the Docker Commands:
+Container can be built locally and pushed to the registry with the following commands:
 
 ```sh
 docker build -f src/main/docker/Dockerfile.jvm . -t registry.digitalocean.com/<YOUR_REPO_NAME>/lobby-example
