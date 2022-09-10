@@ -45,16 +45,25 @@ jobs:
       with:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     
-    # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
-    - name: Build JVM container image
-      run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7) -f src/main/docker/Dockerfile.jvm .
-
     - name: Log in to DigitalOcean Container Registry with short-lived credentials
       run: doctl registry login --expiry-seconds 1200
 
-    # Uncomment this out to push a new tag with the commit hash every time. Note that only pushing latest will save you space if you are using the DO free teir
+    ###################################
+    ################
+    # Uncomment the next two steps out to push a new tag with the commit hash every time. Note that only pushing latest will save you space if you are using the DO free teir
+    ################
+    # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
+    # - name: Build JVM container image (Commit)
+    #   run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7) -f src/main/docker/Dockerfile.jvm .
+
     # - name: Push image to DigitalOcean Container Registry (Commit Tag)
     #   run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
+    ###################################
+
+
+    # Build a Docker image of your application in your registry and tag the image with latest.
+    - name: Build JVM container image (Latest)
+      run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest -f src/main/docker/Dockerfile.jvm .
 
     # Remove the next 3 steps if you don't want to have an always up to date latest tag
     - name: Remove Latest Tag from Image Repository
