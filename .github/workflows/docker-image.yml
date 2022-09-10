@@ -45,8 +45,10 @@ jobs:
       with:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     
+    # Credentials expire in 5 minutes, should be more than enough time for us
+    # Note: if the image build starts taking too long then put both the `docker build` steps before this one
     - name: Log in to DigitalOcean Container Registry with short-lived credentials
-      run: doctl registry login --expiry-seconds 1200
+      run: doctl registry login --expiry-seconds 300
 
     ###################################
     ################
@@ -68,7 +70,8 @@ jobs:
     # Remove the next 3 steps if you don't want to have an always up to date latest tag
     - name: Remove Latest Tag from Image Repository
       run: doctl registry repository delete-tag -f ${{ secrets.REGISTRY_NAME }} latest
-
+    
+    # Push steps may fail if the garbage collection from the last run is still happening
     - name: Push image to DigitalOcean Container Registry (Latest Tag)
       run: docker push ${{ secrets.REGISTRY_BASE_URL }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
 
