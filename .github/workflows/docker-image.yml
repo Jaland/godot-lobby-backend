@@ -56,5 +56,13 @@ jobs:
     # - name: Push image to DigitalOcean Container Registry (Commit Tag)
     #   run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
 
+    # Remove the next 3 steps if you don't want to have an always up to date latest tag
+    - name: Remove Latest Tag from Image Repository
+      run: doctl registry repository delete-tag -f lobby-example latest
+
     - name: Push image to DigitalOcean Container Registry (Latest Tag)
       run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+
+    # Note we want to do this after we push the image so we don't have to redownload base layers of our image
+    - name: Repository Garbage Collection
+      run: doctl registry garbage-collection -f start
