@@ -52,8 +52,9 @@ jobs:
     - name: Log in to DigitalOcean Container Registry with short-lived credentials
       run: doctl registry login --expiry-seconds 1200
 
-    - name: Push image to DigitalOcean Container Registry (Commit Tag)
-      run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
+    # Uncomment this out to push a new tag with the commit hash every time. Note that only pushing latest will save you space if you are using the DO free teir
+    # - name: Push image to DigitalOcean Container Registry (Commit Tag)
+    #   run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
 
     - name: Push image to DigitalOcean Container Registry (Latest Tag)
       run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
