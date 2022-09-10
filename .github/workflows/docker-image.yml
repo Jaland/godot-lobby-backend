@@ -54,23 +54,23 @@ jobs:
     ################
     # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
     # - name: Build JVM container image (Commit)
-    #   run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7) -f src/main/docker/Dockerfile.jvm .
+    #   run: docker build -t ${{ secrets.REGISTRY_BASE_URL }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7) -f src/main/docker/Dockerfile.jvm .
 
     # - name: Push image to DigitalOcean Container Registry (Commit Tag)
-    #   run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
+    #   run: docker push ${{ secrets.REGISTRY_BASE_URL }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:$(echo $GITHUB_SHA | head -c7)
     ###################################
 
 
     # Build a Docker image of your application in your registry and tag the image with latest.
     - name: Build JVM container image (Latest)
-      run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest -f src/main/docker/Dockerfile.jvm .
+      run: docker build -t ${{ secrets.REGISTRY_BASE_URL }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest -f src/main/docker/Dockerfile.jvm .
 
     # Remove the next 3 steps if you don't want to have an always up to date latest tag
     - name: Remove Latest Tag from Image Repository
-      run: doctl registry repository delete-tag -f lobby-example latest
+      run: doctl registry repository delete-tag -f ${{ secrets.REGISTRY_NAME }} latest
 
     - name: Push image to DigitalOcean Container Registry (Latest Tag)
-      run: docker push ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+      run: docker push ${{ secrets.REGISTRY_BASE_URL }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
 
     # Note we want to do this after we push the image so we don't have to redownload base layers of our image
     - name: Repository Garbage Collection
