@@ -83,6 +83,34 @@ TBD Create guide for adding secrets
 | REGISTRY_BASE_URL         | Base url retrieved from the `Container` page. Should probably be `registry.digitalocean.com`                | `registry.digitalocean.com` |
 | REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` | `myrepo`                    |
 
+### Create App
+
+The application can be created by running one of the pipelines supplied by the `.github/workflows/create-app.yml`. Note that this is based on the `config/digitalocean/spec.yaml` file. Note this file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
+
+#### Spec Notes
+
+**Repository:** Make sure to replace the repository information in the spec with your repo info. Should just be a name change.
+
+**Machine:** Defaulting to a single instance of the most basic pod instance (512 mb of memory and 1 shared CPU). it is the cheapest option at $5 a month as of the writing of this README, and can easily be deleted and redeployed using this pipeline again. Note: If you want to test out your app with more than a couple people you can up your memory and cpu options with a different `slug` which you can find using the `doctl apps tier instance-size list` command.
+
+**Region:** Defaults to your closest region but more regions can be found using the `doctl apps list-regions` command.
+
+> Important: Be careful if you remove the `name` field. Doing so could result in multiple instances of your application being deployed which could result in an unpleasant bill. You should also throw a couple billing alerts on you DO just to be safe.
+
+#### Run Workflow
+
+A workflow has been added to the Github Workflows that takes care of the deployment of the application. It assumes the repository has already been created and the image has been deployed. And it also assumes that there is a "latest" tag.
+
+This workflow will only be required to run once after the first deployment and should be run manually. More about [manual deployments](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) can be found here.
+
+After everything is set up navigate to the the workflows in the Github UI and run `Create Backend Application in Digital Ocean` workflow.
+
+#### Validate Deployment
+
+Easiest way to validate your deployment is by using the DO UI. Navigate to [cloud.digitalocean.com](cloud.digitalocean.com) > `Apps` and find the application named `lobby-example-app-backend`.
+
+Find your app by hitting the `Live App`button to get the base URL and then navigate to the path `/q/health`
+
 ### Build Image Locally
 
 Now that we are connected to our Image Registry we just need to build our image and push. Quarkus creates a couple different docker files for us, we are going to use the `src/main/docker/Dockerfile.jvm` file for our build. The `native` file is only intended for serverless use which we do not want for our application.
@@ -101,9 +129,6 @@ make build-docker-image:
 ### Create a Dropplet
 
 Navigate to Dropplets on the side and choose "Create Dropplet"
-
-
-
 
 ## Related Guides
 

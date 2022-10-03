@@ -1,0 +1,15 @@
+---
+name: lobby-example-app-backend
+services:
+- name: lobby-example
+  image:
+    registry_type: DOCR
+    # Replace the repository below with whatever you decided to name your repository
+    repository: lobby-example
+    tag: latest
+  instance_size_slug: basic-xxs
+  instance_count: 1
+  http_port: 8080
+  routes:
+  - path: "/"
+# region: nyc1

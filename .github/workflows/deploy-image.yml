@@ -2,7 +2,7 @@
 # deploy the application on a DIgitalOcean Kubernetes cluster. For description to the entire worklow, 
 # see  .
 
-name: Build, push, and deploy
+name: Build, push, and deploy image
 
 # Controls when the action will run.
 on:
@@ -32,7 +32,7 @@ jobs:
     steps:
 
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
-    - name: Checkout master
+    - name: Checkout
       uses: actions/checkout@main
 
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.

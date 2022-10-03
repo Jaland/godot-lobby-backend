@@ -1,0 +1,43 @@
+# This workfow shows how to build a Docker image, tag and push it to DigitalOcean Container Registry, and
+# deploy the application on a DIgitalOcean Kubernetes cluster. For description to the entire worklow, 
+# see  .
+
+name: Create Backend Application in Digital Ocean
+
+# Controls when the action will run.
+on: workflow_dispatch
+
+env:
+  IMAGE_NAME: lobby-example
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  # This workflow contains a single job called "build".
+  build:
+    # The type of runner that the job will run on.
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
+    - name: Checkout master
+      uses: actions/checkout@main
+
+      
+    # Install doctl.
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    
+    # Credentials expire in 5 minutes, should be more than enough time for us
+    # Note: if the image build starts taking too long then put both the `docker build` steps before this one
+    - name: Log in to DigitalOcean Container Registry with short-lived credentials
+      run: doctl registry login --expiry-seconds 300
+
+
+    # Remove the next 3 steps if you don't want to have an always up to date latest tag
+    - name: Create App in Digital Ocean for Backend Application
+      run: doctl apps create --spec config/digital-ocean/spec.yml
