@@ -39,7 +39,7 @@ jobs:
 
     # Update environment
     - name: Override DB URL based on our secret
-      run: sed -i 's/{{ DB_URL }}/${{ secrets.DATABASE_URL }}/g' config/digital-ocean/spec.yml
+      run: sed -i 's|{{ DB_URL }}|${{ secrets.DATABASE_URL }}|g' config/digital-ocean/spec.yml
 
     # Remove the next 3 steps if you don't want to have an always up to date latest tag
     - name: Create App in Digital Ocean for Backend Application
