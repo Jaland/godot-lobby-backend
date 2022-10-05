@@ -82,6 +82,7 @@ TBD Create guide for adding secrets
 | DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`                                           |                             |
 | REGISTRY_BASE_URL         | Base url retrieved from the `Container` page. Should probably be `registry.digitalocean.com`                | `registry.digitalocean.com` |
 | REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` | `myrepo`                    |
+| DATABASE_URL              | Database Url (should include credentials) | `mongodb+srv://readwrite:abc123@mydatabasehost.gcp.mongodb.net/database?retryWrites=true&w=majority` |
 
 ### Create App
 

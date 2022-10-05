@@ -1,4 +1,5 @@
 ---
+# This will be the name of your `app` on Digital Ocean
 name: lobby-example-app-backend
 services:
 - name: lobby-example
@@ -12,4 +13,9 @@ services:
   http_port: 8080
   routes:
   - path: "/"
+  envs:
+    - key: QUARKUS_MONDODB_CONNECTION_STRING
+      scope: RUN_AND_BUILD_TIME
+      type: SECRET
+      value: {{ DB_URL }}
 # region: nyc1
