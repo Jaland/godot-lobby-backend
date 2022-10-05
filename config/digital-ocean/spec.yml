@@ -14,7 +14,7 @@ services:
   routes:
   - path: "/"
   envs:
-    - key: QUARKUS_MONDODB_CONNECTION_STRING
+    - key: QUARKUS_MONGODB_CONNECTION_STRING
       scope: RUN_AND_BUILD_TIME
       type: SECRET
       value: {{ DB_URL }}
