@@ -1,8 +1,19 @@
 # Backend Lobby Server
 
-This project is an example/POC for the backend Lobby Service of a Godot application. The matching frontend service can be found [here]()
+The goal of this project is the creation of a basic lobby system with a frontend using Godot and a backend server built in Java using the Quarkus framework. For documentation on the the frontend check [this](https://github.com/Jaland/godot-lobby-frontend) repository.
 
-## File Structure
+**Language:** Java 11
+
+**Framework:** [Quarkus](https://quarkus.io/)
+
+## Prerequisites
+
+* Java JDK 11+
+* Maven 3.8+
+* MongoDB Accessible on the internet
+  * The easiest way I found to do this for free is with [Mongodb's Cloud Platform](https://cloud.mongodb.com/)
+
+# File Structure
 
 ```tree
 📦src
@@ -33,56 +44,98 @@ This project is an example/POC for the backend Lobby Service of a Godot applicat
  ┣ 📜pom.xml
  ```
 
-<sub>
 1. **mappers:** A set of Mappers used to translate to/from a DTO(Data Transfer Object) to a Request or Response
-2. **model:** POJOs representing different pieces of the application
-    - A. Database Objects
-    - B. Shared Enums used across our model
-    - C. **request**: Client to Server request/ **response**: Server to Client responses
-    - D. Used to save user information for in-memory cache
-    - E. Inner objects shared across our model
-3. **websocket:** WebSocket Connection Controllers
-    - A. **BaseController:** Controller that is extended by all the other Websocket Controllers (except login). This is where our common logic lives
-    - B. **ChatController:** Extended by controllers that use the chat functionality. Contains logic for sending messages to specific users and all users in a game
-    - C. **LobbyController:** Controller backing the initial login screen
-    - D. **LoginController:** Controller backing the main lobby, and game lobby screen
-    - E. **WalkingSimulator:** Controller backing our example game
-4. **MakeFile** File used to easily run our different commands
-</sub>
+1. **model:** POJOs representing different pieces of the application
+    * A. Database Objects
+    * B. Shared enums used across our model
+    * C. **request**: Client to Server request/ **response**: Server to Client responses
+    * D. Used to save user information for in-memory cache
+    * E. Inner objects shared across our model
+1. **websocket:** WebSocket Connection Controllers
+    * A. **BaseController:** Controller that is extended by all the other Websocket Controllers (except login). This is where our common logic lives
+    * B. **ChatController:** Extended by controllers that use the chat functionality. Contains logic for sending messages to specific users and all users in a game
+    * C. **LobbyController:** Controller backing the initial login screen
+    * D. **LoginController:** Controller backing the main lobby, and game lobby screen
+    * E. **WalkingSimulator:** Controller backing our example game
+1. **MakeFile** Utilizes [make](https://www.gnu.org/software/make/manual/make.html) to run commands
 
-## Running the application in dev mode
+# Deploying
 
-You can run your application in dev mode that enables live coding using:
-```shell script
-./mvnw compile quarkus:dev
+## Deploying Locally (Quick Start)
+
+In order to run locally you will need to create the file `src/main/resources/application-local.properties`. This file will allow you to modify your properties when running the application locally, the only property that is required is `quarkus.mongodb.connection-string` in order to allow our server to connect to the database.
+
+> Note: The `.gitignore` will ignore this file by default so you should not have to worry about putting in Database Credentials on a public repo, and the line can be removed if you fork this into a private repository
+
+**Example application-local.properties**:
+
+```properties
+# Database (REQUIRED)
+quarkus.mongodb.connection-string=mongodb+srv://readwrite:abc123@mydatabase.gcp.mongodb.net/game?retryWrites=true&w=majority
+
+# Gives trace level logging for our code making local debugging easier.
+quarkus.log.category."org.landister".level=TRACE
+
+# Set Logging Levels
+quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n
+quarkus.log.category."org.mongodb.driver".level=WARN
+quarkus.log.level=INFO
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+Once your properties file is in place you can run your application in dev mode using:
 
-## Running Application On DigitalOcean
+```sh
+mvn compile quarkus:dev -Dquarkus.profile=local
+```
 
-There are lots of ways to deploy your application on the interwebs. I have used Google Cloud and you should be able to get that working for free, and I think that AWS has some free options. But I have recently started playing around with [Digital Ocean](https://m.do.co/c/5dca16f0ed95) and I have really like the interface and simplicity of it. The pricing is also very reasonable and if you are just creating a couple dropplets for your initial POC it is easy to turn them off and on so I am going to write the guide below assuming that you are using the DigitalOcean products and are new.
+Or if you have `make` installed using:
+
+```sh
+make start
+```
+
+> **Tip:** Navigating to `localhost:8080` will give you a 404 page with a list of links you can hit that come default with quarkus. The `q/dev` link is useful to explore and better understand what the different java beans and build processes created by the code.
+
+> **Tip:** Dev mode includes `live updates` meaning most code change will take effect without having to recompile (although some changes such as property changes will require a recompile)
+
+### Connecting the Frontend
+
+Once the server is up and running either locally or on a hosted provider, the Godot Frontend can be connected by modifying the `Websocket Host-> Hostname Url` as noted [here](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md)  in the `Updating Server Host Information` section.
+
+## Installing On DigitalOcean
+
+There are lots of ways to deploy your application on the interwebs. I have used Google Cloud in the past and you should be able to get that working for free or close too. I think that AWS may also have some free options. But I have recently started playing around with [Digital Ocean](https://m.do.co/c/5dca16f0ed95) and I have really like the interface and simplicity of it. The pricing is also very reasonable(not totally free). The rest of this demo assumes you are creating a single instance of the backend server at the lowest price for DO($5 a month). And keep in mind that the app can be deleted and redeployed fairly easily using the Github CI/CD process included with this repo and the rate is pro-rated for when the application is actually up. Meaning you can create an account deploy it play around with it for a couple hours then delete it and it will only cost you like $0.20
+
+> **Tip:** Don't forget to delete the instance :)
 
 ### Create Container Repository
 
-DigitalOcean offers a way to create a container repository. The free level lets you create a single repo, should be able to follow the direction to get authenticated.
+The GitHub CI/CD process specified later in this README builds our application as an image that is later deployed into a running container. In order to store this image we need access to an Image Registry.
 
->**Note:** I chose to stick with the normal `docker` tool rather than their provided `doctl` cli.
+[DigitalOcean offers a way to create a container repository](https://www.digitalocean.com/products/container-registry). The free level lets you create a single repo that will hold enough data to house at least one version of our image.
+
+> Note: If you have access to a different container registry you would rather use that is fine, but you may need to make some changes to the Gitlab CI/CD Pipeline.
 
 ### Build Image And Push
 
-This repository includes a `.github/workflows` folder that will create a github workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menu
+This repository includes a `.github/workflows` folder that will create a Github Workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menu
 
-TBD Create guide for adding secrets
+> Note: You will need to activate your Github Workflows which can be done through the `Actions` tab on your repo
 
-#### Required Secrets:
+> Important: Since we are using the `doctl` command (DO's proprietary CLI) if you want to use a different repo you will need to modify the CI pipeline to use `docker` instead.
+
+#### Required Secrets
 
 | Name                      | Value                                                                                                       | Example                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------- |
-| DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`                                           |                             |
+| DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`<br/><br/> <sub>See `Creating Repository Secrets` section of the frontend README for more info<sub>                                           |                             |
 | REGISTRY_BASE_URL         | Base url retrieved from the `Container` page. Should probably be `registry.digitalocean.com`                | `registry.digitalocean.com` |
-| REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` | `myrepo`                    |
-| DATABASE_URL              | Database Url (should include credentials) | `mongodb+srv://readwrite:abc123@mydatabasehost.gcp.mongodb.net/database?retryWrites=true&w=majority` |
+| REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` it would be `myrepo` | `myrepo`                    |
+| DATABASE_URL              | Database Url (should include credentials) <br /> **IMPORANT:** You must escape all of the `&`s with a `\` | `mongodb+srv://readwrite:abc123@mydatabasehost.gcp.mongodb.net/database?retryWrites=true\&w=majority` |
+
+#### Push Image
+
+The pipeline associated with pushing the image to the image repository is `.github/workflows/deploy-image`. Based on the `push` section located at line 10 you will note that the workflow should be run based on any commit to the `main` branch that makes a change to the src folder, pom.xml, etc... (assuming workflows were activated). So the easiest way to test the workflow is by just adding a space to the end of the `pom.xml` and pushing a commit.
 
 ### Create App
 
@@ -133,7 +186,7 @@ Navigate to Dropplets on the side and choose "Create Dropplet"
 
 ## Related Guides
 
-- WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
+* WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
 
 ## Game States
 
@@ -161,3 +214,7 @@ sequenceDiagram
   GClient->>GClient: Update scene
   
 ```
+
+## Useful Links
+
+Git Actions Status (incase your actions stop running suddenly): <https://www.githubstatus.com/>

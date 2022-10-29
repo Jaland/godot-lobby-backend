@@ -16,7 +16,7 @@ build-docker-image:
 	docker build -f src/main/docker/Dockerfile.jvm -t quarkus/lobby-example .
 	docker save quarkus/lobby-example > lobby-image.tar
 
-# Used to push to droplet
+# Used to push to droplet (deprecated)
 push-to-droplet: 
 	ssh $(USER)@$(IP_ADDRESS) "rm -rf /opt/java && mkdir -p /opt/java"
 	rsync target/quarkus-app/quarkus-run.jar $(USER)@$(IP_ADDRESS):/opt/java/lobby.jar
