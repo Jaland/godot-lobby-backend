@@ -139,21 +139,22 @@ The pipeline associated with pushing the image to the image repository is `.gith
 
 ### Create App
 
-The application can be created by running one of the pipelines supplied by the `.github/workflows/create-app.yml`. Note that this is based on the `config/digitalocean/spec.yaml` file. Note this file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
+The application can be created by running pipeline `Create Backend Application on Digital Ocean` supplied by the `.github/workflows/create-app.yml`. Note that this is based on the `config/digitalocean/spec.yaml` file. This file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
 
 #### Spec Notes
 
-**Repository:** Make sure to replace the repository information in the spec with your repo info. Should just be a name change.
+**Repository:** Make sure to replace the repository information in the spec with your repo info, should just be a name change.
 
-**Machine:** Defaulting to a single instance of the most basic pod instance (512 mb of memory and 1 shared CPU). it is the cheapest option at $5 a month as of the writing of this README, and can easily be deleted and redeployed using this pipeline again. Note: If you want to test out your app with more than a couple people you can up your memory and cpu options with a different `slug` which you can find using the `doctl apps tier instance-size list` command.
+**Machine:** Defaulting to a single instance of the most basic pod instance (512 mb of memory and 1 shared CPU). it is the cheapest option at $5 a month as of the writing of this README, and can easily be deleted and redeployed using this pipeline again. 
+> Note: If you want to test out your app with more than a couple people you can up your memory and cpu options with a different `slug` which you can find using the `doctl apps tier instance-size list` command.
 
 **Region:** Defaults to your closest region but more regions can be found using the `doctl apps list-regions` command.
 
-> Important: Be careful if you remove the `name` field. Doing so could result in multiple instances of your application being deployed which could result in an unpleasant bill. You should also throw a couple billing alerts on you DO just to be safe.
+> Important: Be careful if you remove the `name` field. Doing so could result in multiple instances of your application being deployed which could result in an unpleasant bill. You should also throw a couple billing alerts on you Digital Ocean instance just to be safe.
 
-#### Run Workflow
+#### Run The Workflow
 
-A workflow has been added to the Github Workflows that takes care of the deployment of the application. It assumes the repository has already been created and the image has been deployed. And it also assumes that there is a "latest" tag.
+The `Create Backend Application on Digital Ocean` assumes the container repository has already been created and the image has been deployed (see `Build Image and Push` above for instructions on how to do this). And it also assumes that there is a "latest" tagged image.
 
 This workflow will only be required to run once after the first deployment and should be run manually. More about [manual deployments](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) can be found here.
 
@@ -165,53 +166,72 @@ Easiest way to validate your deployment is by using the DO UI. Navigate to [clou
 
 Find your app by hitting the `Live App`button to get the base URL and then navigate to the path `/q/health`
 
-### Build Image Locally
-
-Now that we are connected to our Image Registry we just need to build our image and push. Quarkus creates a couple different docker files for us, we are going to use the `src/main/docker/Dockerfile.jvm` file for our build. The `native` file is only intended for serverless use which we do not want for our application.
-
-Container can be built locally and pushed to the registry with the following commands:
-
-```sh
-docker build -f src/main/docker/Dockerfile.jvm . -t registry.digitalocean.com/<YOUR_REPO_NAME>/lobby-example
-docker push registry.digitalocean.com/<YOUR_REPO_NAME>/lobby-example
-```
-
-```sh
-make build-docker-image:
-```
-
-### Create a Dropplet
-
-Navigate to Dropplets on the side and choose "Create Dropplet"
-
 ## Related Guides
 
 * WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
 
-## Game States
+## Game State Graphs
+
+**Login**
 
 ```mermaid
 sequenceDiagram
-  participant UClient as Host Godot Client
-  participant GClient as All Game User's Godot Client
+  participant Client as User's Godot Client
   participant Controller as Quarkus Server
   participant Database as Database
 
 
-  note right of UClient: Host Starts Game from Lobby
+  note right of Client: User Enters login info and hit's "LOGIN"
 
-  UClient->>+Controller: Send: { requestType: INITIAL_REQUEST }
+  Client->>+Controller: Get: { requestType: LOGIN }
+      Database->>Controller: Retrieve User Info
+      Controller->>-Client: Send: <JWT Token>
+      Client->>Client: Save token in Cookie
+      Client->>Client: Load Lobby View
+      
+    critical Send Initial Request from User
+      Client->>+Controller: Get: { requestType: INITIAL_REQUEST }
+      Database->>Controller: Retrieve User's Game Data
+    
+    option No Game Data Found for User
+      Controller->>Client: Send: { type: leave_game }
+      Client->>Controller: Get: { requestType: REFRESH_LOBBY }
+      Controller->>Client: Send: { type: game_list, game: <Open Game's Info> }
+      Client->>Client: Update Game List with Open Games
+
+    option User is Currently In-Game
+      Controller->>Client: Send: { type: join_game }
+      Client->>Client: Load Game View
+    end
+```
+
+**Start Game**
+```mermaid
+sequenceDiagram
+  participant UClient as Host Godot Client
+  participant GClient as Peer's Godot Clients
+  participant Controller as Quarkus Server
+  participant Database as Database
+
+
+  note right of UClient: Host hits "START" from Game Lobby
+
+  UClient->>+Controller: Get: { requestType: INITIAL_REQUEST }
     Database-->>Controller: Retrieve Game Info
     Controller->>-UClient: Send: { type: load_assets }
 
   
-  UClient->>+Controller: Send: { requestType: LOAD_ASSETS }
+  UClient->>+Controller: Gets: { requestType: LOAD_ASSETS }
     Database-->>Controller: Retrieve Game Info
     Controller-->>Database: Update Game Info
-    Controller->>-GClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
+    Controller->>GClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
   
   
   GClient->>GClient: Update scene
+
+
+  Controller->>-UClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
+  UClient->>UClient: Update scene
   
 ```
 
