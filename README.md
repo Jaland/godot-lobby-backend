@@ -13,6 +13,43 @@ The goal of this project is the creation of a basic lobby system with a frontend
 * MongoDB Accessible on the internet
   * The easiest way I found to do this for free is with [Mongodb's Cloud Platform](https://cloud.mongodb.com/)
 
+# Architecture
+
+```mermaid
+
+flowchart LR
+    subgraph gc[Godot Client]
+    gLogin(Login Scene)
+    gLobby(Main/Game Lobby Scene)
+    gGame(InGame Scene)
+    end
+    subgraph qs[Quarkus Server]
+    qLogin(Login Controller)
+    qLobby(Lobby Controller)
+    qGame(Game Controller)
+    cache[(In-Memory Cache)]
+    end
+    db[(MongoDB Database)]  
+    
+    gLogin --1. Check Credentials--> qLogin
+    qLogin -- 2. Retrieve User Info --> db
+    qLogin --3. Send JWT Token--> gLogin
+    gLogin -- 4. User Logged In --> gLobby
+    qLobby -- Store/Retrieve Lobby Info --> cache
+    gLobby -- "5. Retrieve Game List/Game Lobby Info" --> qLobby
+    gLobby -- "6. Start Game" --> gGame
+    gGame -- "7. Get Game Info" --> qGame
+    qGame -- Store/Retrieve Game Info --> cache
+
+    style gc fill:#0B8384,stroke:#333,stroke-width:4px
+    style qs fill:#EE0000,stroke:#333,stroke-width:4px
+    style db fill:#4DB33D,stroke:#333,stroke-width:4px
+```
+
+> Tip: While the server contains the controllers for the Login/Lobby/InGame. There is no reason it could not be deployed separately as a Login Server, Lobby Server, and set of In Game Servers. Which is how I would probably want to do it in a production environment.
+
+> Tip: The "In-Memory" cache is just a java object in this implementation. But I would probably make it a Redis Server or similar technology if I had more time.
+
 # File Structure
 
 ```tree
