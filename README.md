@@ -46,9 +46,9 @@ flowchart LR
     style db fill:#4DB33D,stroke:#333,stroke-width:4px
 ```
 
-> Tip: While the server contains the controllers for the Login/Lobby/InGame. There is no reason it could not be deployed separately as a Login Server, Lobby Server, and set of In Game Servers. Which is how I would probably want to do it in a production environment.
+> Tip: While this repo is a single code base that contains the controllers for the Login/Lobby/InGame. There is no reason it could not be deployed separately as a Login Server, Lobby Server, and set of In Game Servers. Which is how I would probably want to do it in a production environment.
 
-> Tip: The "In-Memory" cache is just a java object in this implementation. But I would probably make it a Redis Server or similar technology if I had more time.
+> Tip: The "In-Memory" cache is just a java object in this implementation meaning a reboot wipes out your cache, and multiple servers don't share the same cache. But I would probably make it a Redis Server or similar technology if I had more time.
 
 # File Structure
 
@@ -137,7 +137,7 @@ make start
 
 ### Connecting the Frontend
 
-Once the server is up and running either locally or on a hosted provider, the Godot Frontend can be connected by modifying the `Websocket Host-> Hostname Url` as noted [here](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md)  in the `Updating Server Host Information` section.
+Once the server is up and running either locally or on a hosted provider, the Godot Frontend can be connected by modifying the `Websocket Host-> Hostname Url` as noted [here](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#updating-server-host-information)  in the `Updating Server Host Information` section.
 
 ## Installing On DigitalOcean
 
@@ -155,28 +155,28 @@ The GitHub CI/CD process specified later in this README builds our application a
 
 ### Build Image And Push
 
-This repository includes a `.github/workflows` folder that will create a Github Workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menu
+This repository includes a `.github/workflows` folder that will create a Github Workflow by default. But in order for it to work there are two secrets that will need to be added to your repo's "secrets" which can be done through the setting menu, documented [here](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#creating-repository-secret)
 
 > Note: You will need to activate your Github Workflows which can be done through the `Actions` tab on your repo
 
-> Important: Since we are using the `doctl` command (DO's proprietary CLI) if you want to use a different repo you will need to modify the CI pipeline to use `docker` instead.
+> Important: Since we are using the `doctl` command (DO's proprietary CLI) if you want to use a different image repository you will need to modify the CI pipeline to use `docker` instead.
 
 #### Required Secrets
 
 | Name                      | Value                                                                                                       | Example                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------- |
-| DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`<br/><br/> <sub>See `Creating Repository Secrets` section of the frontend README for more info<sub>                                           |                             |
+| DIGITALOCEAN_ACCESS_TOKEN | Token retrieved from the DO cloud ui. `API -> Generate New Token`<br/><br/> <sub>See [Creating Repository Secrets](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#creating-api-token) section of the frontend README for more info<sub>                                           |                             |
 | REGISTRY_BASE_URL         | Base url retrieved from the `Container` page. Should probably be `registry.digitalocean.com`                | `registry.digitalocean.com` |
 | REGISTRY_NAME             | Registry name should be the part after the `/` so if your url looks like `registry.digitalocean.com/myrepo` it would be `myrepo` | `myrepo`                    |
 | DATABASE_URL              | Database Url (should include credentials) <br /> **IMPORANT:** You must escape all of the `&`s with a `\` | `mongodb+srv://readwrite:abc123@mydatabasehost.gcp.mongodb.net/database?retryWrites=true\&w=majority` |
 
 #### Push Image
 
-The pipeline associated with pushing the image to the image repository is `.github/workflows/deploy-image`. Based on the `push` section located at line 10 you will note that the workflow should be run based on any commit to the `main` branch that makes a change to the src folder, pom.xml, etc... (assuming workflows were activated). So the easiest way to test the workflow is by just adding a space to the end of the `pom.xml` and pushing a commit.
+The pipeline associated with pushing the image to the image repository is `.github/workflows/deploy-image`. This should be done every time you commit to the main branch based on the `push` section located at line 10. Note that it will only happen if the commit includes a change to the src folder, pom.xml, etc... (assuming workflows were activated). So the easiest way to test this workflow is by just adding a space to the end of the `pom.xml` and pushing a commit.
 
 ### Create App
 
-The application can be created by running pipeline `Create Backend Application on Digital Ocean` supplied by the `.github/workflows/create-app.yml`. Note that this is based on the `config/digitalocean/spec.yaml` file. This file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
+The application can be created by running pipeline `Create Backend Application on Digital Ocean` supplied by the `.github/workflows/create-app.yml`. Note that the application infrastructure specs are based on the `config/digitalocean/spec.yaml` file. This file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
 
 #### Spec Notes
 
@@ -193,23 +193,32 @@ The application can be created by running pipeline `Create Backend Application o
 
 The `Create Backend Application on Digital Ocean` assumes the container repository has already been created and the image has been deployed (see `Build Image and Push` above for instructions on how to do this). And it also assumes that there is a "latest" tagged image.
 
-This workflow will only be required to run once after the first deployment and should be run manually. More about [manual deployments](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) can be found here.
+The workflow is set in a way that it needs to be run manually in order to prevent accidental multiple deployments. More about [manual deployments](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) can be found here and an example of running the manual workflow can be found in the [frontend README](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#run-the-workflow).
 
-After everything is set up navigate to the the workflows in the Github UI and run `Create Backend Application in Digital Ocean` workflow.
+After everything is set up navigate to actions in the Github UI and run `Create Backend Application in Digital Ocean` workflow.
 
 #### Validate Deployment
 
 Easiest way to validate your deployment is by using the DO UI. Navigate to [cloud.digitalocean.com](cloud.digitalocean.com) > `Apps` and find the application named `lobby-example-app-backend`.
 
-Find your app by hitting the `Live App`button to get the base URL and then navigate to the path `/q/health`
+Find your app's endpoint by hitting the `Live App`button to get the base URL and then navigate to the path `/q/health`
 
-## Related Guides
+## Hook Up the Frontend
 
-* WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
+Once you have validated your application has been deployed the only thing left is to setup the [Frontend End and update the host information](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#updating-server-host-information) to point to your newly deployed server
+
 
 ## Game State Graphs
 
-**Login**
+Communication from the frontend to the backend happen using [WebSockets](https://quarkus.io/guides/websockets). With the data being passed using the [JSON Format](https://www.json.org/json-en.html) for the most part. This provides an easier way for both our client and server to pass and interpret multiple pieces of information at once.
+
+### Login Flow
+
+When a user logins to our application we will retrieve that users info and return back a [JWT](https://jwt.io/) that will be used for validation and will contain the user's username information. And the Godot client will store that token as a cookie for future use. See the `BaseControler` for the validation logic.
+
+> **Note:** The JWT has a 5 hour expiration by default and currently has no logic for automatic refresh.
+
+If we are able to successfully login, we will check to see if the user is currently in a an in-progress game and put them there if so. Or if not we will put the user in the main lobby and refresh the list of active games.
 
 ```mermaid
 sequenceDiagram
@@ -229,6 +238,7 @@ sequenceDiagram
     critical Send Initial Request from User
       Client->>+Controller: Get: { requestType: INITIAL_REQUEST }
       Database->>Controller: Retrieve User's Game Data
+      Controller->>Client: Send: { type: load_assets }
     
     option No Game Data Found for User
       Controller->>Client: Send: { type: leave_game }
@@ -242,7 +252,12 @@ sequenceDiagram
     end
 ```
 
-**Start Game**
+## Start Game
+
+The host of a game lobby in which a valid number of players have joined, has the option of starting the game. Once started a message will be sent to all the clients in the game and they will load the "In Game Scene". From there the server will request that the host decide on the spawn points and send that info back to the server, where the server will relay that information to the rest of the clients currently in the game.
+
+> **Note:** I am not going to go over the "restart" logic but it works effectively the same way.
+
 ```mermaid
 sequenceDiagram
   participant UClient as Host Godot Client
@@ -253,23 +268,36 @@ sequenceDiagram
 
   note right of UClient: Host hits "START" from Game Lobby
 
-  UClient->>+Controller: Get: { requestType: INITIAL_REQUEST }
+
+  rect rgb(191, 223, 255)
+  note right of UClient: Lobby Controller
+  UClient->>+Controller: Request: { requestType: START_GAME }
+    Controller->>UClient: Response: { type: start_game }
+    Controller->>GClient: Response: { type: start_game }
+
+  end
+
+  UClient-->>UClient: Load Game Scene
+  GClient-->>GClient: Load Game Scene
+
+
+  rect rgb(225, 225, 153)
+  note right of UClient: InGame Controller
+  UClient->>+Controller: Request: { requestType: INITIAL_REQUEST }
+    Controller-->>Controller: Validate Request is from Host
     Database-->>Controller: Retrieve Game Info
-    Controller->>-UClient: Send: { type: load_assets }
+    Controller->>UClient: Response: { type: load_assets }
+    UClient-->>UClient: "Load Player/Goal Spawn Points"
 
   
-  UClient->>+Controller: Gets: { requestType: LOAD_ASSETS }
-    Database-->>Controller: Retrieve Game Info
+  UClient->>+Controller: Request: { requestType: LOAD_ASSETS, <Spawn Point Info> }
     Controller-->>Database: Update Game Info
-    Controller->>GClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
-  
-  
-  GClient->>GClient: Update scene
+    Controller->>GClient: Response: { type: map_setup, player: <Player Location>, goal: <Goal Spawn> }
+    GClient->>GClient: Update scene
+    Controller->>UClient: Response: { type: map_setup, player: <Player Location>, goal: <Goal Spawn> }
+    UClient->>UClient: Update scene
 
-
-  Controller->>-UClient: Send: { type: map_setup, player: <Player Info>, goal: Goal Info }
-  UClient->>UClient: Update scene
-  
+  end
 ```
 
 ## Useful Links
