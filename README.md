@@ -13,89 +13,6 @@ The goal of this project is the creation of a basic lobby system with a frontend
 * MongoDB Accessible on the internet
   * The easiest way I found to do this for free is with [Mongodb's Cloud Platform](https://cloud.mongodb.com/)
 
-# Architecture
-
-```mermaid
-
-flowchart LR
-    subgraph gc[Godot Client]
-    gLogin(Login Scene)
-    gLobby(Main/Game Lobby Scene)
-    gGame(InGame Scene)
-    end
-    subgraph qs[Quarkus Server]
-    qLogin(Login Controller)
-    qLobby(Lobby Controller)
-    qGame(Game Controller)
-    cache[(In-Memory Cache)]
-    end
-    db[(MongoDB Database)]  
-    
-    gLogin --1. Check Credentials--> qLogin
-    qLogin -- 2. Retrieve User Info --> db
-    qLogin --3. Send JWT Token--> gLogin
-    gLogin -- 4. User Logged In --> gLobby
-    qLobby -- Store/Retrieve Lobby Info --> cache
-    gLobby -- "5. Retrieve Game List/Game Lobby Info" --> qLobby
-    gLobby -- "6. Start Game" --> gGame
-    gGame -- "7. Get Game Info" --> qGame
-    qGame -- Store/Retrieve Game Info --> cache
-
-    style gc fill:#0B8384,stroke:#333,stroke-width:4px
-    style qs fill:#EE0000,stroke:#333,stroke-width:4px
-    style db fill:#4DB33D,stroke:#333,stroke-width:4px
-```
-
-> Tip: While this repo is a single code base that contains the controllers for the Login/Lobby/InGame. There is no reason it could not be deployed separately as a Login Server, Lobby Server, and set of In Game Servers. Which is how I would probably want to do it in a production environment.
-
-> Tip: The "In-Memory" cache is just a java object in this implementation meaning a reboot wipes out your cache, and multiple servers don't share the same cache. But I would probably make it a Redis Server or similar technology if I had more time.
-
-# File Structure
-
-```tree
-📦src
- ┣ 📂main
- ┃ ┣ 📂java.org.landister.lobby.backend
- ┃ ┃ ┣ 📂mapper ➊
- ┃ ┃ ┣ 📂model❷
- ┃ ┃ ┃ ┣ 📂dao Ⓐ
- ┃ ┃ ┃ ┣ 📂enums Ⓑ
- ┃ ┃ ┃ ┣ 📂request Ⓒ
- ┃ ┃ ┃ ┣ 📂response Ⓒ
- ┃ ┃ ┃ ┣ 📂session Ⓓ
- ┃ ┃ ┃ ┗ 📂shared Ⓔ
- ┃ ┃ ┣ 📂services
- ┃ ┃ ┣ 📂util
- ┃ ┃ ┗ 📂websocket❸
- ┃ ┃ ┃ ┣ 📂games
- ┃ ┃ ┃ ┃ ┗ 📜WalkingSimulator.java Ⓔ
- ┃ ┃ ┃ ┣ 📜BaseController.java Ⓐ
- ┃ ┃ ┃ ┣ 📜ChatController.java Ⓑ
- ┃ ┃ ┃ ┣ 📜LobbyController.java Ⓒ
- ┃ ┃ ┃ ┗ 📜LoginController.java Ⓓ
- ┃ ┗ 📂resources
- ┃ ┃ ┗ 📜application.properties
- ┣ 📜LICENSE
- ┣ 📜Makefile ❹
- ┣ 📜README.md
- ┣ 📜pom.xml
- ```
-
-1. **mappers:** A set of Mappers used to translate to/from a DTO(Data Transfer Object) to a Request or Response
-1. **model:** POJOs representing different pieces of the application
-    * A. Database Objects
-    * B. Shared enums used across our model
-    * C. **request**: Client to Server request/ **response**: Server to Client responses
-    * D. Used to save user information for in-memory cache
-    * E. Inner objects shared across our model
-1. **websocket:** WebSocket Connection Controllers
-    * A. **BaseController:** Controller that is extended by all the other Websocket Controllers (except login). This is where our common logic lives
-    * B. **ChatController:** Extended by controllers that use the chat functionality. Contains logic for sending messages to specific users and all users in a game
-    * C. **LobbyController:** Controller backing the initial login screen
-    * D. **LoginController:** Controller backing the main lobby, and game lobby screen
-    * E. **WalkingSimulator:** Controller backing our example game
-1. **MakeFile** Utilizes [make](https://www.gnu.org/software/make/manual/make.html) to run commands
-
 # Deploying
 
 ## Deploying Locally (Quick Start)
@@ -176,14 +93,14 @@ The pipeline associated with pushing the image to the image repository is `.gith
 
 ### Create App
 
-The application can be created by running pipeline `Create Backend Application on Digital Ocean` supplied by the `.github/workflows/create-app.yml`. Note that the application infrastructure specs are based on the `config/digitalocean/spec.yaml` file. This file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
+The application can be created by running pipeline `Create Backend Application on Digital Ocean` supplied by the `.github/workflows/create-app.yml`. Note that the application infrastructure specs are based on the [config/digital-ocean/spec.yml](config/digital-ocean/spec.yml) file. This file can be customized based on the spec found [here](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
 
 #### Spec Notes
 
 **Repository:** Make sure to replace the repository information in the spec with your repo info, should just be a name change.
 
 **Machine:** Defaulting to a single instance of the most basic pod instance (512 mb of memory and 1 shared CPU). it is the cheapest option at $5 a month as of the writing of this README, and can easily be deleted and redeployed using this pipeline again. 
-> Note: If you want to test out your app with more than a couple people you can up your memory and cpu options with a different `slug` which you can find using the `doctl apps tier instance-size list` command.
+> Note: If you want to test out your app with more than a your friend(s) you can up your memory and cpu options with a different `slug` which you can find using the `doctl apps tier instance-size list` command.
 
 **Region:** Defaults to your closest region but more regions can be found using the `doctl apps list-regions` command.
 
@@ -207,6 +124,94 @@ Find your app's endpoint by hitting the `Live App`button to get the base URL and
 
 Once you have validated your application has been deployed the only thing left is to setup the [Frontend End and update the host information](https://github.com/Jaland/godot-lobby-frontend/blob/main/README.md#updating-server-host-information) to point to your newly deployed server
 
+At this point you should be able to register/login to your server and start a new game.
+
+# Coding Info
+
+Below I have tried to document some of the basics of how the application works, and how the code is layed out.
+
+## Architecture
+
+```mermaid
+
+flowchart TD
+    subgraph gc[Godot Client]
+    gLogin(Login Scene)
+    gLobby(Main/Game Lobby Scene)
+    gGame(InGame Scene)
+    end
+    subgraph qs[Quarkus Server]
+    qLogin(Login Controller)
+    qLobby(Lobby Controller)
+    qGame(Game Controller)
+    cache[(In-Memory Cache)]
+    end
+    db[(MongoDB Database)]  
+    
+    gLogin --1. Check Credentials--> qLogin
+    qLogin -- 2. Retrieve User Info --> db
+    qLogin --3. Send JWT Token--> gLogin
+    gLogin -- 4. User Logged In --> gLobby
+    qLobby -- Store/Retrieve Lobby Info --> cache
+    gLobby -- "5. Retrieve Game List/Game Lobby Info" --> qLobby
+    gLobby -- "6. Start Game" --> gGame
+    gGame -- "7. Get Game Info" --> qGame
+    qGame -- Store/Retrieve Game Info --> cache
+
+    style gc fill:#0B8384,stroke:#333,stroke-width:4px
+    style qs fill:#EE0000,stroke:#333,stroke-width:4px
+    style db fill:#4DB33D,stroke:#333,stroke-width:4px
+```
+
+> Tip: While this repo is a single code base that contains the controllers for the Login/Lobby/InGame. There is no reason it could not be deployed separately as a Login Server, Lobby Server, and set of In Game Servers. Which is how I would probably want to do it in a production environment.
+
+> Tip: The "In-Memory" cache is just a java object in this implementation meaning a reboot wipes out your cache, and multiple servers don't share the same cache. But I would probably make it a Redis Server or similar technology if I had more time.
+
+## File Structure
+
+```tree
+📦src
+ ┣ 📂main
+ ┃ ┣ 📂java.org.landister.lobby.backend
+ ┃ ┃ ┣ 📂mapper ➊
+ ┃ ┃ ┣ 📂model❷
+ ┃ ┃ ┃ ┣ 📂dao Ⓐ
+ ┃ ┃ ┃ ┣ 📂enums Ⓑ
+ ┃ ┃ ┃ ┣ 📂request Ⓒ
+ ┃ ┃ ┃ ┣ 📂response Ⓒ
+ ┃ ┃ ┃ ┣ 📂session Ⓓ
+ ┃ ┃ ┃ ┗ 📂shared Ⓔ
+ ┃ ┃ ┣ 📂services
+ ┃ ┃ ┣ 📂util
+ ┃ ┃ ┗ 📂websocket❸
+ ┃ ┃ ┃ ┣ 📂games
+ ┃ ┃ ┃ ┃ ┗ 📜WalkingSimulator.java Ⓔ
+ ┃ ┃ ┃ ┣ 📜BaseController.java Ⓐ
+ ┃ ┃ ┃ ┣ 📜ChatController.java Ⓑ
+ ┃ ┃ ┃ ┣ 📜LobbyController.java Ⓒ
+ ┃ ┃ ┃ ┗ 📜LoginController.java Ⓓ
+ ┃ ┗ 📂resources
+ ┃ ┃ ┗ 📜application.properties
+ ┣ 📜LICENSE
+ ┣ 📜Makefile ❹
+ ┣ 📜README.md
+ ┣ 📜pom.xml
+ ```
+
+1. **mappers:** A set of Mappers used to translate to/from a DTO(Data Transfer Object) to a Request or Response
+1. **model:** POJOs representing different pieces of the application
+    * A. Database Objects
+    * B. Shared enums used across our model
+    * C. **request**: Client to Server request/ **response**: Server to Client responses
+    * D. Used to save user information for in-memory cache
+    * E. Inner objects shared across our model
+1. **websocket:** WebSocket Connection Controllers
+    * A. **BaseController:** Controller that is extended by all the other Websocket Controllers (except login). This is where our common logic lives
+    * B. **ChatController:** Extended by controllers that use the chat functionality. Contains logic for sending messages to specific users and all users in a game
+    * C. **LobbyController:** Controller backing the initial login screen
+    * D. **LoginController:** Controller backing the main lobby, and game lobby screen
+    * E. **WalkingSimulator:** Controller backing our example game
+1. **MakeFile** Utilizes [make](https://www.gnu.org/software/make/manual/make.html) to run commands
 
 ## Game State Graphs
 
